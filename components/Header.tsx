@@ -264,52 +264,6 @@ export default function Header({
 
               <DropdownMenuSeparator />
 
-              {/* Duration */}
-              <DropdownMenuLabel>Duration</DropdownMenuLabel>
-              {filterOptions.duration.map((option) => (
-                <DropdownMenuCheckboxItem
-                  key={option.value}
-                  checked={selectedFilters.duration.includes(option.value)}
-                  onCheckedChange={() =>
-                    handleFilterToggle("duration", option.value)
-                  }
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-
-              <DropdownMenuSeparator />
-
-              {/* Author */}
-              <DropdownMenuLabel>Author</DropdownMenuLabel>
-              {filterOptions.author.map((option) => (
-                <DropdownMenuCheckboxItem
-                  key={option.value}
-                  checked={selectedFilters.author.includes(option.value)}
-                  onCheckedChange={() =>
-                    handleFilterToggle("author", option.value)
-                  }
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-
-              <DropdownMenuSeparator />
-
-              {/* Status */}
-              <DropdownMenuLabel>Status</DropdownMenuLabel>
-              {filterOptions.status.map((option) => (
-                <DropdownMenuCheckboxItem
-                  key={option.value}
-                  checked={selectedFilters.status.includes(option.value)}
-                  onCheckedChange={() =>
-                    handleFilterToggle("status", option.value)
-                  }
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-
               {getActiveFiltersCount() > 0 && (
                 <>
                   <DropdownMenuSeparator />

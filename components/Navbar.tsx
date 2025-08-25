@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import { useEffect, useState } from "react";
 import {
   DropdownMenu,
@@ -9,9 +9,11 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { data: session } = useSession();
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
@@ -99,8 +101,14 @@ export default function Navbar() {
                     <DropdownMenuSeparator />
 
                     <DropdownMenuItem onClick={() => handleMenuClick("logout")}>
-                      <LogOut className="mr-3 h-4 w-4" />
-                      Sign out
+                      {session ? (
+                        <>
+                          <LogOut className="mr-3 h-4 w-4" />
+                          Sign out
+                        </>
+                      ) : (
+                        <>Sign in</>
+                      )}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 )}
