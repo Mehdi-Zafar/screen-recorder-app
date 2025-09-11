@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "./ui/dropdown-menu";
+import Link from "next/link";
 
 export default function Header({
   placeholder = "Search videos...",
@@ -22,7 +23,7 @@ export default function Header({
   className = "",
   title,
   subtitle,
-  img
+  img,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
@@ -137,38 +138,38 @@ export default function Header({
   return (
     <header className="max-w-7xl mx-auto">
       {/* <div className="mx-auto px-4 sm:px-6 lg:px-8"> */}
-        <div className="flex items-center justify-between py-8 md:py-12">
-          {/* Left Section - Heading, Subheading, and Image */}
-          <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-3">
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                  {title}
-                </h1>
-                <Badge variant="secondary" className="hidden sm:inline-flex">
-                  Free
-                </Badge>
-              </div>
-              <p className="text-sm sm:text-base text-gray-600 max-w-lg mb-4">
-                {subtitle}
-              </p>
-
-              {/* Feature highlights */}
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="text-xs">
-                  HD Quality
-                </Badge>
-                <Badge variant="outline" className="text-xs">
-                  No Watermark
-                </Badge>
-                <Badge variant="outline" className="text-xs">
-                  Easy Sharing
-                </Badge>
-              </div>
+      <div className="flex items-center justify-between py-8 md:py-12">
+        {/* Left Section - Heading, Subheading, and Image */}
+        <div className="flex items-center space-x-6 lg:space-x-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-3">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                {title}
+              </h1>
+              <Badge variant="secondary" className="hidden sm:inline-flex">
+                Free
+              </Badge>
             </div>
+            <p className="text-sm sm:text-base text-gray-600 max-w-lg mb-4">
+              {subtitle}
+            </p>
 
-            {/* Image Card */}
-            {/* <div className="hidden md:block flex-shrink-0">
+            {/* Feature highlights */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-xs">
+                HD Quality
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                No Watermark
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Easy Sharing
+              </Badge>
+            </div>
+          </div>
+
+          {/* Image Card */}
+          {/* <div className="hidden md:block flex-shrink-0">
               <Card className="p-1 shadow-lg">
                 <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-md overflow-hidden">
                   <img 
@@ -179,10 +180,11 @@ export default function Header({
                 </div>
               </Card>
             </div> */}
-          </div>
+        </div>
 
-          {/* Right Section - Two Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 ml-6">
+        {/* Right Section - Two Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 ml-6">
+          <Link href="/upload">
             <Button
               onClick={handleUpload}
               variant="destructive"
@@ -192,18 +194,19 @@ export default function Header({
               <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               Upload Video
             </Button>
+          </Link>
 
-            <Button
-              onClick={handleRecord}
-              variant="outline"
-              size="lg"
-              className="shadow-md hover:shadow-lg transition-shadow"
-            >
-              <Camera className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Record Video
-            </Button>
-          </div>
+          <Button
+            onClick={handleRecord}
+            variant="outline"
+            size="lg"
+            className="shadow-md hover:shadow-lg transition-shadow"
+          >
+            <Camera className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+            Record Video
+          </Button>
         </div>
+      </div>
       {/* </div> */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
         {/* Search Input */}

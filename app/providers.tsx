@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -20,6 +21,15 @@ export function Providers({ children }: { children: ReactNode }) {
         router.refresh();
       }}
       Link={Link}
+      toast={({ message, variant, ...props }) => {
+        if (variant === "error") {
+          toast.error(message);
+        } else if (variant === "success") {
+          toast.success(message);
+        } else {
+          toast(message);
+        }
+      }}
     >
       {children}
     </AuthUIProvider>

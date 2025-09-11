@@ -1,25 +1,23 @@
-import { betterFetch } from "@better-fetch/fetch";
-import type { Session } from "better-auth/types";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "./lib/auth";
+import { headers } from "next/headers";
 
 export default async function authMiddleware(request: NextRequest) {
-  const { data: session } = await betterFetch<Session>(
-    "/api/auth/get-session",
-    {
-      baseURL: request.nextUrl.origin,
-      headers: {
-        //get the cookie from the request
-        cookie: request.headers.get("cookie") || "",
-      },
-    }
-  );
+  const session = await auth.api.getSession({ headers: await headers() });
 
-  if (!session) {
+  if (!session && !request.nextUrl.pathname.startsWith("/auth")) {
     return NextResponse.redirect(new URL("/auth/sign-in", request.url));
   }
+
+  if (session && request.nextUrl.pathname.startsWith("/auth")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/profile/:path*"], // Add your protected routes
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|__nextjs_devtools__|assets).*)",
+  ],
 };
