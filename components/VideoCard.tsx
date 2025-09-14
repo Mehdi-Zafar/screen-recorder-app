@@ -13,18 +13,25 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { VideoWithUser } from '@/lib/db/schema';
+import { formatDuration, timeAgo } from '@/lib/utils';
+import Link from 'next/link';
+
+interface VideoCardProps{
+  video:VideoWithUser;
+  cardClass?:string;
+}
 
 export default function VideoCard({
-  thumbnail = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=225&fit=crop&crop=center",
-  title = "How to Build Amazing Web Applications",
-  duration = "12:34",
-  authorAvatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-  authorName = "John Developer",
-  createdAt = "2 days ago",
-  views = "1.2K views",
-  className = ""
-}){
+  video
+  ,cardClass
+}:VideoCardProps){
   const [isHovered, setIsHovered] = useState(false);
+  const {title,thumbnailUrl,duration,views,createdAt,user} = video
+  const authorName = user?.name ?? "Jack"
+  const authorAvatar = user?.image ?? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+  const videoCreatedAt = timeAgo(createdAt);
+  const durationFormatted = formatDuration(duration)
 
   const handleMenuAction = (action:any) => {
     console.log(`${action} clicked for video: ${title}`);
@@ -38,15 +45,16 @@ export default function VideoCard({
 
   return (
     <Card 
-      className={`group overflow-hidden transition-all duration-200 hover:shadow-lg ${className} pt-0`}
+      className={`group overflow-hidden transition-all duration-200 hover:shadow-lg ${cardClass} pt-0`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent className="p-0">
         {/* Thumbnail Section */}
+        <Link href={`/video/${video.id}`}>
         <div className="relative aspect-video bg-gray-100 overflow-hidden">
           <img
-            src={thumbnail}
+            src={thumbnailUrl}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
           />
@@ -56,7 +64,7 @@ export default function VideoCard({
             variant="secondary" 
             className="absolute bottom-2 right-2 bg-black/80 text-white hover:bg-black/80 text-xs px-2 py-1"
           >
-            {duration}
+            {durationFormatted}
           </Badge>
           
           {/* Play Button Overlay */}
@@ -71,6 +79,7 @@ export default function VideoCard({
             </Button>
           </div>
         </div>
+        </Link>
 
         {/* Video Info Section */}
         <div className="p-4">
@@ -88,7 +97,7 @@ export default function VideoCard({
             {/* Title and Author Info */}
             <div className="flex-1 min-w-0">
               <h3 
-                className="font-medium text-sm leading-5 text-gray-900 line-clamp-2 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+                className="font-medium text-sm leading-5 text-gray-900 line-clamp-2 mb-2 cursor-pointer hover:text-blue-600 transition-colors inline"
                 onClick={handleVideoClick}
                 title={title}
               >
@@ -100,7 +109,7 @@ export default function VideoCard({
                 <div className="flex items-center space-x-1">
                   <span>{views}</span>
                   <span>•</span>
-                  <span>{createdAt}</span>
+                  <span>{videoCreatedAt}</span>
                 </div>
               </div>
             </div>

@@ -1,5 +1,7 @@
 import Header from "@/components/Header";
 import VideoCard from "@/components/VideoCard";
+import { Video, VideoWithUser } from "@/lib/db/schema";
+import { VideoService } from "@/lib/services/video-service";
 import React from "react";
 
 const sampleVideos = [
@@ -38,13 +40,16 @@ const sampleVideos = [
   },
 ];
 
-export default function page() {
+export default async function page() {
+
+  const fetchedVideos = await VideoService.getPublicVideosAll();
+  const allVideos:VideoWithUser[] = [...fetchedVideos];
   return (
     <div>
       <Header title="Public Library" subtitle="Explore the library" img=""/>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 max-w-7xl mx-auto my-8">
-        {sampleVideos.map((video, index) => (
-          <VideoCard key={index} {...video} />
+        {allVideos.map((video, index) => (
+          <VideoCard key={index} video={video} />
         ))}
       </div>
     </div>
