@@ -12,7 +12,7 @@ export const auth = betterAuth({
     enabled: true,
   },
   secret: process.env.AUTH_SECRET!,
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: ["http://localhost:3000","https://screen-recorder-app-psi.vercel.app"],
   advanced: {
     database: {
       generateId: false,
