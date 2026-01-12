@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { users, videos, type NewVideo } from "@/lib/db/schema";
-import { eq, and, desc, count, sql } from "drizzle-orm";
+import { eq, and, desc, count, sql, or } from "drizzle-orm";
 import { videoWithUserSelect } from "../db/queries/videoQueries";
 import { VideoWithUser } from "@/lib/db/schema";
 
@@ -177,5 +177,27 @@ export class VideoService {
       .offset(offset);
 
     return { data: videoList, total };
+  }
+
+  static async getAuthorizedVideoById(
+    id: string, 
+    userId?: string
+  ): Promise<VideoWithUser | null> {
+    const [video] = await db
+      .select(videoWithUserSelect)
+      .from(videos)
+      .leftJoin(users, eq(videos.userId, users.id))
+      .where(
+        and(
+          eq(videos.id, id),
+          or(
+            eq(videos.visibility, 'public'),
+            userId ? eq(videos.userId, userId) : undefined
+          )
+        )
+      )
+      .limit(1);
+
+    return video || null;
   }
 }

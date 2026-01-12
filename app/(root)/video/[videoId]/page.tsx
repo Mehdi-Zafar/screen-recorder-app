@@ -1,40 +1,71 @@
-import { Suspense } from 'react';
-import { notFound, redirect } from 'next/navigation';
-import { VideoService } from '@/lib/services/video-service';
-import VideoPlayer from '@/components/VideoPlayer';
-import VideoMetadata from '@/components/VideoMetadata';
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { VideoService } from "@/lib/services/video-service";
+import VideoPlayer from "@/components/VideoPlayer";
+import VideoMetadata from "@/components/VideoMetadata";
+// import SignUpBanner from '@/components/SignUpBanner';
+import VideoActions from "@/components/VideoActions";
+// import SignUpCallToAction from '@/components/video/SignUpCallToAction';
 
 interface VideoPageProps {
   params: Promise<{ videoId: string }>;
 }
 
-export default async function VideoPage({ params }: VideoPageProps) {
+async function VideoContent({ videoId }: { videoId: string }) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  // Get video ID from params
-  const { videoId } = await params;
+  // Fetch video using service method with smart access control
+  const video = await VideoService.getVideoById(videoId, session?.user?.id);
 
-  // Fetch video with user information
-  const video = await VideoService.getPublicVideoById(videoId);
-
-  // Return 404 if video not found or user doesn't have access
+  // If video not found or user doesn't have access
   if (!video) {
     notFound();
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <Suspense fallback={<VideoSkeleton />}>
-        <div className="space-y-6">
-          {/* Video Player */}
-          <VideoPlayer
-            videoUrl={video.videoUrl}
-            thumbnailUrl={video.thumbnailUrl}
-            title={video.title}
-          />
+  // Determine context
+  const isOwner = session?.user?.id === video.userId;
+  const isPublic = video.visibility === "public";
+  const isAuthenticated = !!session?.user;
 
-          {/* Video Metadata */}
-          <VideoMetadata video={video} />
-        </div>
+  return (
+    <div className="space-y-6">
+      {/* Sign Up Banner - Show for public videos when user is not logged in */}
+      {isPublic && !isAuthenticated && (
+        // <SignUpBanner />
+        <></>
+      )}
+
+      {/* Video Player */}
+      <VideoPlayer
+        videoUrl={video.videoUrl}
+        thumbnailUrl={video.thumbnailUrl}
+        title={video.title}
+      />
+
+
+      {/* Video Metadata */}
+      <VideoMetadata video={video} showVisibility={isOwner} />
+
+      {/* Call to Action - Show for public videos when user is not logged in */}
+      {isPublic && !isAuthenticated && (
+        // <SignUpCallToAction />
+        <></>
+      )}
+    </div>
+  );
+}
+
+export default async function VideoPage({ params }: VideoPageProps) {
+  const { videoId } = await params;
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Suspense fallback={<VideoSkeleton />}>
+        <VideoContent videoId={videoId} />
       </Suspense>
     </div>
   );
@@ -57,14 +88,16 @@ function VideoSkeleton() {
 export async function generateMetadata({ params }: VideoPageProps) {
   const { videoId } = await params;
 
+  // Use the public method for metadata to avoid auth checks
   const video = await VideoService.getPublicVideoById(videoId);
 
   if (!video) {
     return {
-      title: 'Video Not Found',
+      title: "Video Not Found",
     };
   }
 
+  // Rich metadata for public videos (better SEO)
   return {
     title: video.title,
     description: video.description || `Watch ${video.title}`,
@@ -72,7 +105,13 @@ export async function generateMetadata({ params }: VideoPageProps) {
       title: video.title,
       description: video.description || undefined,
       images: video.thumbnailUrl ? [video.thumbnailUrl] : [],
-      type: 'video.other',
+      type: "video.other",
+    },
+    twitter: {
+      card: "player",
+      title: video.title,
+      description: video.description || undefined,
+      images: video.thumbnailUrl ? [video.thumbnailUrl] : [],
     },
   };
 }

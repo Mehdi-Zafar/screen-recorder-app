@@ -6,18 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Share2, Eye, Calendar, Globe, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import VideoActions from "./VideoActions";
+import { getUserInitials } from "@/lib/helpers";
 
 interface VideoMetadataProps {
   video: VideoWithUser;
+  showVisibility?: boolean; // Only show for owners
 }
 
-export default function VideoMetadata({ video }: VideoMetadataProps) {
+export default function VideoMetadata({
+  video,
+  showVisibility = false,
+}: VideoMetadataProps) {
   const handleShare = async () => {
     const shareUrl = `${window.location.origin}/video/${video.id}`;
 
     try {
-      if (navigator.share) {
-        // Use native share API if available
+      if (navigator.share && video.visibility === "public") {
         await navigator.share({
           title: video.title,
           text: video.description || undefined,
@@ -25,12 +30,10 @@ export default function VideoMetadata({ video }: VideoMetadataProps) {
         });
         toast.success("Shared successfully!");
       } else {
-        // Fallback to clipboard
         await navigator.clipboard.writeText(shareUrl);
         toast.success("Link copied to clipboard!");
       }
     } catch (error) {
-      // User cancelled share or clipboard failed
       if (error instanceof Error && error.name !== "AbortError") {
         toast.error("Failed to share video");
       }
@@ -42,18 +45,6 @@ export default function VideoMetadata({ video }: VideoMetadataProps) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const getUserInitials = (): string => {
-    if (video.user.name) {
-      return video.user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return "U";
   };
 
   return (
@@ -84,24 +75,23 @@ export default function VideoMetadata({ video }: VideoMetadataProps) {
             </div>
           )}
 
-          <div className="flex items-center gap-1">
-            {video.visibility === "public" ? (
-              <>
-                <Globe className="w-4 h-4" />
-                <span>Public</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-4 h-4" />
-                <span>Private</span>
-              </>
-            )}
-          </div>
+          {showVisibility && (
+            <div className="flex items-center gap-1">
+              {video.visibility === "public" ? (
+                <>
+                  <Globe className="w-4 h-4" />
+                  <span>Public</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Private</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Divider */}
-      <hr className="border-border" />
 
       {/* User Info & Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -109,10 +99,10 @@ export default function VideoMetadata({ video }: VideoMetadataProps) {
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10">
             <AvatarImage
-              src={video.user.image || undefined}
-              alt={video.user.name}
+              src={video?.user?.image || undefined}
+              alt={video?.user?.name}
             />
-            <AvatarFallback>{getUserInitials()}</AvatarFallback>
+            <AvatarFallback>{getUserInitials(video?.user?.name)}</AvatarFallback>
           </Avatar>
 
           <div>
@@ -133,6 +123,8 @@ export default function VideoMetadata({ video }: VideoMetadataProps) {
           </Button>
         </div>
       </div>
+
+      {showVisibility && <VideoActions video={video} />}
 
       {/* Divider */}
       <hr className="border-border" />
