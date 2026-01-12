@@ -33,7 +33,7 @@ export default function VideoCard({
   const videoCreatedAt = timeAgo(createdAt);
   const durationFormatted = formatDuration(duration)
 
-  const handleMenuAction = (action:any) => {
+  const handleMenuAction = (action:string) => {
     console.log(`${action} clicked for video: ${title}`);
     // Add your action handlers here
   };

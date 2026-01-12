@@ -70,7 +70,7 @@ export default function Header({
     onSearchChange?.("");
   };
 
-  const handleFilterToggle = (category: any, value: any) => {
+  const handleFilterToggle = (category: string, value: string) => {
     setSelectedFilters((prev) => {
       const newFilters = { ...prev };
       if (newFilters[category].includes(value)) {
@@ -85,7 +85,7 @@ export default function Header({
     });
   };
 
-  const removeFilter = (category: any, value: any) => {
+  const removeFilter = (category: string, value: string) => {
     handleFilterToggle(category, value);
   };
 
@@ -111,20 +111,20 @@ export default function Header({
     );
   };
 
-  const getAllActiveFilters = () => {
-    const activeFilters: any[] = [];
-    Object.entries(selectedFilters).forEach(([category, values]) => {
-      values.forEach((value) => {
-        const option = filterOptions[category].find(
-          (opt) => opt.value === value
-        );
-        if (option) {
-          activeFilters.push({ category, value, label: option.label });
-        }
-      });
-    });
-    return activeFilters;
-  };
+  // const getAllActiveFilters = () => {
+  //   const activeFilters: any[] = [];
+  //   Object.entries(selectedFilters).forEach(([category, values]) => {
+  //     values.forEach((value) => {
+  //       const option = filterOptions[category].find(
+  //         (opt) => opt.value === value
+  //       );
+  //       if (option) {
+  //         activeFilters.push({ category, value, label: option.label });
+  //       }
+  //     });
+  //   });
+  //   return activeFilters;
+  // };
   const handleUpload = () => {
     console.log("Start recording clicked");
     // Add your recording logic here
