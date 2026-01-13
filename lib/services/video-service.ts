@@ -3,17 +3,7 @@ import { users, videos, type NewVideo } from "@/lib/db/schema";
 import { eq, and, desc, count, sql, or } from "drizzle-orm";
 import { videoWithUserSelect } from "../db/queries/videoQueries";
 import { VideoWithUser } from "@/lib/db/schema";
-
-export interface PaginationOptions {
-  page: number;
-  limit: number;
-  visibility?: "public" | "private";
-}
-
-export interface PaginatedVideos {
-  data: VideoWithUser[]; // video + user
-  total: number;
-}
+import { PaginationOptions } from "../types/video";
 
 export class VideoService {
   static async createVideo(data: NewVideo) {
@@ -66,6 +56,17 @@ export class VideoService {
     return { data: videoList, total };
   }
 
+  // static async getUserVideos(userId: string, limit = 20, offset = 0): Promise<VideoWithUser[]> {
+  //   return await db
+  //     .select(videoWithUserSelect)
+  //     .from(videos)
+  //     .leftJoin(users, eq(videos.userId, users.id))
+  //     .where(eq(videos.userId, userId))
+  //     .orderBy(desc(videos.createdAt))
+  //     .limit(limit)
+  //     .offset(offset);
+  // }
+
   static async getAllUserVideos(userId: string) {
     return await db
       .select(videoWithUserSelect)
@@ -85,12 +86,23 @@ export class VideoService {
     return video || null;
   }
 
-  static async getPublicVideosAll(limit = 20, offset = 0) {
+  // static async getPublicVideosAll(limit = 20, offset = 0) {
+  //   return await db
+  //     .select(videoWithUserSelect)
+  //     .from(videos)
+  //     .leftJoin(users, eq(videos.userId, users.id))
+  //     .where(eq(videos.visibility, "public"))
+  //     .orderBy(desc(videos.createdAt))
+  //     .limit(limit)
+  //     .offset(offset);
+  // }
+
+  static async getPublicVideos(limit = 20, offset = 0): Promise<VideoWithUser[]> {
     return await db
       .select(videoWithUserSelect)
       .from(videos)
       .leftJoin(users, eq(videos.userId, users.id))
-      .where(eq(videos.visibility, "public"))
+      .where(eq(videos.visibility, 'public'))
       .orderBy(desc(videos.createdAt))
       .limit(limit)
       .offset(offset);
@@ -106,7 +118,11 @@ export class VideoService {
     return video || null;
   }
 
-  static async updateVideo(id: string, userId: string, updates: Partial<Omit<NewVideo, "userId">>) {
+  static async updateVideo(
+    id: string,
+    userId: string,
+    updates: Partial<Omit<NewVideo, "userId">>
+  ) {
     const [video] = await db
       .update(videos)
       .set({ ...updates, updatedAt: new Date() })
@@ -132,28 +148,28 @@ export class VideoService {
     return result.rowCount > 0;
   }
 
-  static async getPublicVideos(options: PaginationOptions) {
-    const { page, limit } = options;
-    const offset = (page - 1) * limit;
+  // static async getPublicVideos(options: PaginationOptions) {
+  //   const { page, limit } = options;
+  //   const offset = (page - 1) * limit;
 
-    const [totalResult] = await db
-      .select({ count: count() })
-      .from(videos)
-      .where(eq(videos.visibility, "public"));
+  //   const [totalResult] = await db
+  //     .select({ count: count() })
+  //     .from(videos)
+  //     .where(eq(videos.visibility, "public"));
 
-    const total = totalResult?.count || 0;
+  //   const total = totalResult?.count || 0;
 
-    const videoList = await db
-      .select(videoWithUserSelect)
-      .from(videos)
-      .leftJoin(users, eq(videos.userId, users.id))
-      .where(eq(videos.visibility, "public"))
-      .orderBy(desc(videos.createdAt))
-      .limit(limit)
-      .offset(offset);
+  //   const videoList = await db
+  //     .select(videoWithUserSelect)
+  //     .from(videos)
+  //     .leftJoin(users, eq(videos.userId, users.id))
+  //     .where(eq(videos.visibility, "public"))
+  //     .orderBy(desc(videos.createdAt))
+  //     .limit(limit)
+  //     .offset(offset);
 
-    return { data: videoList, total };
-  }
+  //   return { data: videoList, total };
+  // }
 
   static async searchPublicVideos(query: string, options: PaginationOptions) {
     const { page, limit } = options;
@@ -163,7 +179,12 @@ export class VideoService {
     const [totalResult] = await db
       .select({ count: count() })
       .from(videos)
-      .where(and(eq(videos.visibility, "public"), sql`LOWER(${videos.title}) LIKE ${searchPattern}`));
+      .where(
+        and(
+          eq(videos.visibility, "public"),
+          sql`LOWER(${videos.title}) LIKE ${searchPattern}`
+        )
+      );
 
     const total = totalResult?.count || 0;
 
@@ -171,7 +192,12 @@ export class VideoService {
       .select(videoWithUserSelect)
       .from(videos)
       .leftJoin(users, eq(videos.userId, users.id))
-      .where(and(eq(videos.visibility, "public"), sql`LOWER(${videos.title}) LIKE ${searchPattern}`))
+      .where(
+        and(
+          eq(videos.visibility, "public"),
+          sql`LOWER(${videos.title}) LIKE ${searchPattern}`
+        )
+      )
       .orderBy(desc(videos.createdAt))
       .limit(limit)
       .offset(offset);
@@ -180,7 +206,7 @@ export class VideoService {
   }
 
   static async getAuthorizedVideoById(
-    id: string, 
+    id: string,
     userId?: string
   ): Promise<VideoWithUser | null> {
     const [video] = await db
@@ -191,7 +217,7 @@ export class VideoService {
         and(
           eq(videos.id, id),
           or(
-            eq(videos.visibility, 'public'),
+            eq(videos.visibility, "public"),
             userId ? eq(videos.userId, userId) : undefined
           )
         )

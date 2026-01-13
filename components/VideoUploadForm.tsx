@@ -97,26 +97,25 @@ export default function VideoUploadForm() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      console.log("Form data:", data);
-
       // Step 1: Upload files to UploadThing
       toast.info("Uploading files...");
 
       let videoUrl: string | null = null;
       let thumbnailUrl: string | null = null;
-      let duration:number|null;
+      let duration: number | null;
 
       // Upload video
       if (videoUploadRef.current) {
         try {
           videoUrl = await videoUploadRef.current.uploadFile();
-          duration = await videoUploadRef.current.videoDuration()
+          duration = await videoUploadRef.current.videoDuration();
           if (!videoUrl) {
             throw new Error("Video upload failed");
           }
           toast.success("Video uploaded successfully!");
         } catch (error) {
           toast.error("Video upload failed");
+          setIsSubmitting(false);
           throw error;
         }
       }
@@ -131,6 +130,7 @@ export default function VideoUploadForm() {
           toast.success("Thumbnail uploaded successfully!");
         } catch (error) {
           toast.error("Thumbnail upload failed");
+          setIsSubmitting(false);
           throw error;
         }
       }

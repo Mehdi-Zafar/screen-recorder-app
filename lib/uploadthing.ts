@@ -13,7 +13,6 @@ export const ourFileRouter = {
       return { userId: user.user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Image upload complete for userId:", metadata.userId);
       return { uploadedBy: metadata.userId };
     }),
 
@@ -34,12 +33,6 @@ export const ourFileRouter = {
       };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Video upload complete:", {
-        userId: metadata.userId,
-        fileUrl: file.url,
-        fileName: file.name,
-        fileSize: file.size,
-      });
 
       return {
         uploadedBy: metadata.userId,
@@ -66,11 +59,6 @@ export const ourFileRouter = {
       };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Thumbnail upload complete:", {
-        userId: metadata.userId,
-        fileUrl: file.url,
-        fileName: file.name,
-      });
 
       return {
         uploadedBy: metadata.userId,
@@ -94,14 +82,6 @@ export const ourFileRouter = {
     })
     .onUploadComplete(async ({ metadata, file }) => {
       const fileType = file.type.startsWith("video/") ? "video" : "image";
-
-      console.log(`${fileType} upload complete:`, {
-        userId: metadata.userId,
-        fileUrl: file.url,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      });
 
       return {
         uploadedBy: metadata.userId,
