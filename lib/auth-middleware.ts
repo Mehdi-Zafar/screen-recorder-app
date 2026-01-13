@@ -1,11 +1,8 @@
 import { NextRequest } from "next/server";
 import { auth } from "./auth";
-import { headers } from "next/headers";
 
 export async function withAuth(req: NextRequest) {
-    console.log(req.headers)
   const session = await auth.api.getSession({ headers: req.headers });
-    console.log(session)
   if (!session?.user) {
     return {
       error: "Unauthorized",
