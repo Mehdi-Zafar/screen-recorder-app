@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/sonner";
 import { ReactNode } from "react";
 
 export default function layout({
@@ -6,5 +5,5 @@ export default function layout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  return <>{children} <Toaster position="top-center" /></>;
+  return <>{children}</>;
 }
