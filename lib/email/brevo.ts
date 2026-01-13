@@ -52,12 +52,6 @@ export async function sendEmail(options: SendEmailOptions) {
       throw new Error(`Brevo API error: ${result.message || response.statusText}`);
     }
 
-    console.log('✅ Email sent successfully:', {
-      messageId: result.messageId,
-      to,
-      subject,
-    });
-
     return result;
   } catch (error) {
     console.error('❌ Email send failed:', error);
@@ -68,9 +62,6 @@ export async function sendEmail(options: SendEmailOptions) {
 // Helper function to test email sending
 export async function testEmailConnection() {
   try {
-    console.log('Testing Brevo connection...');
-    console.log('API Key:', process.env.BREVO_API_KEY?.substring(0, 10) + '...');
-    console.log('Sender Email:', process.env.BREVO_SENDER_EMAIL);
 
     const result = await sendEmail({
       to: process.env.BREVO_SENDER_EMAIL || '',
@@ -79,7 +70,6 @@ export async function testEmailConnection() {
       textContent: 'Test Email - If you received this, your Brevo setup is working!',
     });
 
-    console.log('✅ Test email sent successfully:', result);
     return true;
   } catch (error) {
     console.error('❌ Test email failed:', error);

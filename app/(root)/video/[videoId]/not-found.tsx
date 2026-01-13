@@ -12,7 +12,7 @@ export default function VideoNotFound() {
         <h2 className="text-2xl font-bold text-foreground">Video Not Found</h2>
         <p className="text-muted-foreground text-center max-w-md">{message}</p>
         <Button asChild>
-          <Link href="/dashboard">Go to Dashboard</Link>
+          <Link href="/">Go to Home</Link>
         </Button>
       </div>
     </div>

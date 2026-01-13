@@ -1,7 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
-import { getPasswordResetEmailTemplate } from "./email/templates";
+import {
+  getEmailVerificationTemplate,
+  getPasswordResetEmailTemplate,
+} from "./email/templates";
 import { sendEmail } from "./email/brevo";
 
 export const auth = betterAuth({
@@ -11,45 +14,59 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification:false,
+    requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
-      // Log in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('========================================');
-        console.log('🔐 PASSWORD RESET REQUEST');
-        console.log('========================================');
-        console.log('To:', user.email);
-        console.log('Name:', user.name);
-        console.log('Reset URL:', url);
-        console.log('========================================');
-      }
-
       try {
         // Get email template
         const { html, text } = getPasswordResetEmailTemplate({
-          userName: user.name || '',
+          userName: user.name || "",
           resetUrl: url,
         });
 
         // Send email via Brevo
         await sendEmail({
           to: user.email,
-          subject: 'Reset Your Password - Screen Recorder',
+          subject: "Reset Your Password - Screen Recorder",
           htmlContent: html,
           textContent: text,
         });
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Password reset email sent successfully via Brevo');
-        }
       } catch (error) {
-        console.error('❌ Failed to send password reset email:', error);
+        console.error("❌ Failed to send password reset email:", error);
         throw error;
       }
     },
   },
-  secret: process.env.AUTH_SECRET!,
-  trustedOrigins: ["http://localhost:3000","https://screen-recorder-app-psi.vercel.app"],
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }) => {
+
+      try {
+        const { html, text } = getEmailVerificationTemplate({
+          userName: user.name || "",
+          verificationUrl: url,
+        });
+
+        await sendEmail({
+          to: user.email,
+          subject: "Verify Your Email - Screen Recorder",
+          htmlContent: html,
+          textContent: text,
+        });
+
+      } catch (error) {
+        console.error("❌ Failed to send verification email:", error);
+        throw error;
+      }
+    },
+    sendOnSignIn: true,
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+  },
+  secret: process.env.BETTER_AUTH_SECRET!,
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://screen-recorder-app-psi.vercel.app",
+  ],
   advanced: {
     database: {
       generateId: false,
