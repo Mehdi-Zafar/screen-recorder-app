@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { buttonVariants } from "./ui/button";
 import { getUserInitials } from "@/lib/helpers";
+import { toast } from "sonner";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -24,6 +25,7 @@ export default function Navbar() {
     try {
       await authClient.signOut({ fetchOptions: { credentials: "include" } });
       router.push("/auth/sign-in");
+      toast.success("Signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
     }
