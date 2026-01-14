@@ -109,7 +109,7 @@ export default function VideoCard({ video, cardClass }: VideoCardProps) {
             {/* Title and Author Info */}
             <div className="flex-1 min-w-0">
               <h3
-                className="font-medium text-sm leading-5 text-gray-900 line-clamp-2 mb-2 cursor-pointer hover:text-blue-600 transition-colors inline"
+                className="font-semibold text-sm leading-5 text-gray-900 line-clamp-2 mb-2 cursor-pointer hover:text-blue-600 transition-colors inline"
                 onClick={handleVideoClick}
                 title={title}
               >

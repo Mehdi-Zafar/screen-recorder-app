@@ -39,7 +39,7 @@ export default function Navbar() {
           <div className="flex-shrink-0">
             <Link href="/">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                ScreenCast
+                Screen<span className="text-red-500">Cast</span>
               </h1>
             </Link>
           </div>
@@ -78,7 +78,7 @@ export default function Navbar() {
                   </div>
 
                   <DropdownMenuItem asChild>
-                    <Link href={`/profile/${session?.user?.id}`}>
+                    <Link href={`/profile/videos`}>
                       <User className="mr-3 h-4 w-4" />
                       Profile
                     </Link>
