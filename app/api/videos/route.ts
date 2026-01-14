@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch user's videos with optional filtering
-    const videos = await VideoService.getUserVideos(authResult.user.id, {
+    const videos = await VideoService.getUserVideosApi(authResult.user.id, {
       page,
       limit,
       visibility,

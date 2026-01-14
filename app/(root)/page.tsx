@@ -57,7 +57,6 @@ async function LibraryContent({ searchQuery }: { searchQuery: string }) {
               ? `No videos found for "${searchQuery}"`
               : "No public videos available yet"
           }
-          showVisibilityBadge={false}
           pageSize={pageSize}
         />
       </div>
