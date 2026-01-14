@@ -28,33 +28,33 @@ export class VideoService {
     return videoWithUser;
   }
 
-  // static async getUserVideos(userId: string, options: PaginationOptions) {
-  //   const { page, limit, visibility } = options;
-  //   const offset = (page - 1) * limit;
+  static async getUserVideosApi(userId: string, options: PaginationOptions) {
+    const { page, limit, visibility } = options;
+    const offset = (page - 1) * limit;
 
-  //   let whereConditions = eq(videos.userId, userId);
-  //   if (visibility) {
-  //     whereConditions = and(whereConditions, eq(videos.visibility, visibility));
-  //   }
+    let whereConditions = eq(videos.userId, userId);
+    if (visibility) {
+      whereConditions = and(whereConditions, eq(videos.visibility, visibility));
+    }
 
-  //   const [totalResult] = await db
-  //     .select({ count: count() })
-  //     .from(videos)
-  //     .where(whereConditions);
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(videos)
+      .where(whereConditions);
 
-  //   const total = totalResult?.count || 0;
+    const total = totalResult?.count || 0;
 
-  //   const videoList = await db
-  //     .select(videoWithUserSelect)
-  //     .from(videos)
-  //     .leftJoin(users, eq(videos.userId, users.id))
-  //     .where(whereConditions)
-  //     .orderBy(desc(videos.createdAt))
-  //     .limit(limit)
-  //     .offset(offset);
+    const videoList = await db
+      .select(videoWithUserSelect)
+      .from(videos)
+      .leftJoin(users, eq(videos.userId, users.id))
+      .where(whereConditions)
+      .orderBy(desc(videos.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-  //   return { data: videoList, total };
-  // }
+    return { data: videoList, total };
+  }
 
   static async getUserVideos(userId: string, limit = 20, offset = 0): Promise<VideoWithUser[]> {
     return await db

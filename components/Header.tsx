@@ -17,10 +17,17 @@ import {
 } from "./ui/dropdown-menu";
 import Link from "next/link";
 
+interface Filter {
+  dateRange: string[];
+  duration: string[];
+  author: string[];
+  status: string[];
+}
+
 interface HeaderProps {
   placeholder?: string;
   onSearchChange?: (value: string) => void;
-  onFilterChange?: (value: any) => void;
+  onFilterChange?: (value: Filter) => void;
   className?: string;
   title: string;
   subtitle: string;

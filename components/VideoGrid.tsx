@@ -17,7 +17,6 @@ interface VideoGridProps {
   queryKey: string[];
   searchQuery?: string;
   emptyMessage?: string;
-  showVisibilityBadge?: boolean;
   pageSize?: number;
 }
 
@@ -27,7 +26,6 @@ export default function VideoGrid({
   queryKey,
   searchQuery = "",
   emptyMessage = "No videos found",
-  showVisibilityBadge = false,
   pageSize = 10,
 }: VideoGridProps) {
   // ✅ Track if we've rendered this search query before
@@ -138,7 +136,9 @@ export default function VideoGrid({
 
       {searchQuery && !isFetching && (
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing results for "{searchQuery}" ({allVideos.length} videos)
+          Showing results for {'"'}
+          {searchQuery}
+          {'"'} ({allVideos.length} videos)
         </div>
       )}
 

@@ -71,7 +71,6 @@ async function ProfileVideosContent({ searchQuery }: { searchQuery: string }) {
               ? `No videos found for "${searchQuery}"`
               : "You haven't uploaded any videos yet"
           }
-          showVisibilityBadge={true} // Show public/private badges
           pageSize={pageSize}
         />
       </div>
