@@ -136,7 +136,9 @@ export default function VideoGrid({
 
       {searchQuery && !isFetching && (
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing results for "{searchQuery}" ({allVideos.length} videos)
+          Showing results for {'"'}
+          {searchQuery}
+          {'"'} ({allVideos.length} videos)
         </div>
       )}
 
