@@ -19,7 +19,7 @@ async function VideoContent({ videoId }: { videoId: string }) {
   });
 
   // Fetch video using service method with smart access control
-  const video = await VideoService.getVideoById(videoId, session?.user?.id);
+  const video = await VideoService.getAuthorizedVideoById(videoId, session?.user?.id);
 
   // If video not found or user doesn't have access
   if (!video) {
