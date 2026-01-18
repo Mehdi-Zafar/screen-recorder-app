@@ -20,9 +20,21 @@ export default async function AuthPage({
   return (
     <main className="container h-screen flex grow flex-col items-center justify-center self-center p-4 md:p-6">
       <div className="absolute top-8 left-8">
-        <Link href="/" className={buttonVariants({variant:"outline"})}><ArrowLeftIcon/> Back to Home</Link>
+        <Link href="/" className={buttonVariants({ variant: "outline" })}>
+          <ArrowLeftIcon /> Back to Home
+        </Link>
       </div>
-      <AuthView path={path} classNames={{form:{forgotPasswordLink:'cursor-pointer',button:'cursor-pointer'},footerLink:'cursor-pointer'}}/>
+      <AuthView
+        path={path}
+        socialLayout="horizontal"
+        classNames={{
+          form: {
+            forgotPasswordLink: "cursor-pointer",
+            button: "cursor-pointer",
+          },
+          footerLink: "cursor-pointer",
+        }}
+      />
     </main>
   );
 }

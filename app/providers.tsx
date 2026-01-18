@@ -30,6 +30,9 @@ export function Providers({ children }: { children: ReactNode }) {
           toast(message);
         }
       }}
+      social={{
+        providers: ["google"],
+      }}
     >
       {children}
     </AuthUIProvider>
