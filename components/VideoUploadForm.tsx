@@ -27,6 +27,7 @@ import TextareaInput from "./TextareaInput";
 import FileInput, { FileInputRef } from "./FileInput"; // Your original component
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Back to File-based validation (like your original)
 const formSchema = z.object({
@@ -80,6 +81,7 @@ type FormData = z.infer<typeof formSchema>;
 // Main Form Component
 export default function VideoUploadForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   // Refs to access upload functions
   const videoUploadRef = useRef<FileInputRef>(null);
@@ -172,6 +174,11 @@ export default function VideoUploadForm() {
       // alert("Video uploaded successfully!");
 
       form.reset();
+      if (data.visibility === "public") {
+        queryClient.invalidateQueries({ queryKey: ["videos", "public"] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["videos", "user"] });
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Upload failed. Please try again.");
