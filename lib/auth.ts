@@ -30,7 +30,6 @@ export const auth = betterAuth({
           htmlContent: html,
           textContent: text,
         });
-
       } catch (error) {
         console.error("❌ Failed to send password reset email:", error);
         throw error;
@@ -39,7 +38,6 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-
       try {
         const { html, text } = getEmailVerificationTemplate({
           userName: user.name || "",
@@ -52,7 +50,6 @@ export const auth = betterAuth({
           htmlContent: html,
           textContent: text,
         });
-
       } catch (error) {
         console.error("❌ Failed to send verification email:", error);
         throw error;
@@ -63,6 +60,12 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
   },
   secret: process.env.BETTER_AUTH_SECRET!,
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
   trustedOrigins: [
     "http://localhost:3000",
     "https://screen-recorder-app-psi.vercel.app",
