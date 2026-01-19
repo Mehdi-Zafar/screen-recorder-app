@@ -26,7 +26,7 @@ export default async function AuthPage({
       </div>
       <AuthView
         path={path}
-        socialLayout="horizontal"
+        socialLayout="vertical"
         classNames={{
           form: {
             forgotPasswordLink: "cursor-pointer",
