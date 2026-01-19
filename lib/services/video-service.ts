@@ -4,6 +4,7 @@ import { eq, and, desc, count, sql, or, ilike } from "drizzle-orm";
 import { videoWithUserSelect } from "../db/queries/videoQueries";
 import { VideoWithUser } from "@/lib/db/schema";
 import { PaginationOptions } from "../types/video";
+import { deleteVideoFiles } from "../uploadthing/delete";
 
 export class VideoService {
   static async createVideo(data: NewVideo) {
@@ -56,7 +57,11 @@ export class VideoService {
     return { data: videoList, total };
   }
 
-  static async getUserVideos(userId: string, limit = 20, offset = 0): Promise<VideoWithUser[]> {
+  static async getUserVideos(
+    userId: string,
+    limit = 20,
+    offset = 0,
+  ): Promise<VideoWithUser[]> {
     return await db
       .select(videoWithUserSelect)
       .from(videos)
@@ -91,7 +96,7 @@ export class VideoService {
     userId: string,
     searchQuery: string,
     limit = 20,
-    offset = 0
+    offset = 0,
   ): Promise<VideoWithUser[]> {
     const searchTerm = `%${searchQuery}%`;
 
@@ -104,9 +109,9 @@ export class VideoService {
           eq(videos.userId, userId),
           or(
             ilike(videos.title, searchTerm),
-            ilike(videos.description, searchTerm)
-          )
-        )
+            ilike(videos.description, searchTerm),
+          ),
+        ),
       )
       .orderBy(desc(videos.createdAt))
       .limit(limit)
@@ -124,12 +129,15 @@ export class VideoService {
   //     .offset(offset);
   // }
 
-  static async getPublicVideos(limit = 20, offset = 0): Promise<VideoWithUser[]> {
+  static async getPublicVideos(
+    limit = 20,
+    offset = 0,
+  ): Promise<VideoWithUser[]> {
     return await db
       .select(videoWithUserSelect)
       .from(videos)
       .leftJoin(users, eq(videos.userId, users.id))
-      .where(eq(videos.visibility, 'public'))
+      .where(eq(videos.visibility, "public"))
       .orderBy(desc(videos.createdAt))
       .limit(limit)
       .offset(offset);
@@ -149,7 +157,7 @@ export class VideoService {
   static async searchPublicVideos(
     searchQuery: string,
     limit = 20,
-    offset = 0
+    offset = 0,
   ): Promise<VideoWithUser[]> {
     const searchTerm = `%${searchQuery}%`;
 
@@ -159,13 +167,13 @@ export class VideoService {
       .leftJoin(users, eq(videos.userId, users.id))
       .where(
         and(
-          eq(videos.visibility, 'public'),
+          eq(videos.visibility, "public"),
           or(
             ilike(videos.title, searchTerm),
             ilike(videos.description, searchTerm),
-            ilike(users.name, searchTerm)
-          )
-        )
+            ilike(users.name, searchTerm),
+          ),
+        ),
       )
       .orderBy(desc(videos.createdAt))
       .limit(limit)
@@ -175,7 +183,7 @@ export class VideoService {
   static async updateVideo(
     id: string,
     userId: string,
-    updates: Partial<Omit<NewVideo, "userId">>
+    updates: Partial<Omit<NewVideo, "userId">>,
   ) {
     const [video] = await db
       .update(videos)
@@ -194,13 +202,13 @@ export class VideoService {
     return videoWithUser;
   }
 
-  static async deleteVideo(id: string, userId: string) {
-    const result = await db
-      .delete(videos)
-      .where(and(eq(videos.id, id), eq(videos.userId, userId)));
+  // static async deleteVideo(id: string, userId: string) {
+  //   const result = await db
+  //     .delete(videos)
+  //     .where(and(eq(videos.id, id), eq(videos.userId, userId)));
 
-    return result.rowCount > 0;
-  }
+  //   return result.rowCount > 0;
+  // }
 
   // static async getPublicVideos(options: PaginationOptions) {
   //   const { page, limit } = options;
@@ -261,7 +269,7 @@ export class VideoService {
 
   static async getAuthorizedVideoById(
     id: string,
-    userId?: string
+    userId?: string,
   ): Promise<VideoWithUser | null> {
     const [video] = await db
       .select(videoWithUserSelect)
@@ -272,12 +280,159 @@ export class VideoService {
           eq(videos.id, id),
           or(
             eq(videos.visibility, "public"),
-            userId ? eq(videos.userId, userId) : undefined
-          )
-        )
+            userId ? eq(videos.userId, userId) : undefined,
+          ),
+        ),
       )
       .limit(1);
 
     return video || null;
+  }
+
+  static async getVideoByIdForOwner(
+    videoId: string,
+    userId: string,
+  ): Promise<VideoWithUser | null> {
+    const [video] = await db
+      .select(videoWithUserSelect)
+      .from(videos)
+      .leftJoin(users, eq(videos.userId, users.id))
+      .where(and(eq(videos.id, videoId), eq(videos.userId, userId)))
+      .limit(1);
+
+    return video || null;
+  }
+
+  /**
+   * Update video visibility (public/private)
+   */
+  static async updateVisibility(
+    videoId: string,
+    userId: string,
+    visibility: "public" | "private",
+  ): Promise<VideoWithUser | null> {
+    // First verify ownership
+    const existingVideo = await this.getVideoByIdForOwner(videoId, userId);
+
+    if (!existingVideo) {
+      return null;
+    }
+
+    // Update visibility
+    const [updatedVideo] = await db
+      .update(videos)
+      .set({
+        visibility,
+        updatedAt: new Date(),
+      })
+      .where(eq(videos.id, videoId))
+      .returning();
+
+    if (!updatedVideo) {
+      return null;
+    }
+
+    // Return updated video with user info
+    return await this.getAuthorizedVideoById(videoId, userId);
+  }
+
+  /**
+   * Update video details (title, description, etc.)
+   */
+  // static async updateVideo(
+  //   videoId: string,
+  //   userId: string,
+  //   data: {
+  //     title?: string;
+  //     description?: string;
+  //     visibility?: 'public' | 'private';
+  //   }
+  // ): Promise<VideoWithUser | null> {
+  //   // Verify ownership
+  //   const existingVideo = await this.getVideoByIdForOwner(videoId, userId);
+
+  //   if (!existingVideo) {
+  //     return null;
+  //   }
+
+  //   // Update video
+  //   const [updatedVideo] = await db
+  //     .update(videos)
+  //     .set({
+  //       ...data,
+  //       updatedAt: new Date(),
+  //     })
+  //     .where(eq(videos.id, videoId))
+  //     .returning();
+
+  //   if (!updatedVideo) {
+  //     return null;
+  //   }
+
+  //   return await this.getVideoById(videoId);
+  // }
+
+  /**
+   * Increment video views
+   */
+  // static async incrementViews(videoId: string): Promise<void> {
+  //   await db
+  //     .update(videos)
+  //     .set({
+  //       views: videos.views + 1,
+  //     })
+  //     .where(eq(videos.id, videoId));
+  // }
+
+  // ========== DELETE OPERATIONS ==========
+
+  /**
+   * Delete video (owner only)
+   */
+  static async deleteVideo(videoId: string, userId: string): Promise<boolean> {
+    // Verify ownership
+    const existingVideo = await this.getVideoByIdForOwner(videoId, userId);
+
+    if (!existingVideo) {
+      return false;
+    }
+
+    try {
+      // Delete video
+      await db.delete(videos).where(eq(videos.id, videoId));
+
+      deleteVideoFiles(
+        existingVideo.videoUrl,
+        existingVideo.thumbnailUrl || undefined,
+      ).catch((error) => {
+        // Log error but don't fail the deletion
+        console.error("Failed to delete files from UploadThing:", error);
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      throw error;
+    }
+  }
+
+  // ========== COUNT OPERATIONS ==========
+
+  static async getPublicVideosCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(videos)
+      .where(eq(videos.visibility, "public"));
+
+    return result?.count || 0;
+  }
+
+  static async getUserVideosCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(videos)
+      .where(eq(videos.userId, userId));
+
+    return result?.count || 0;
   }
 }

@@ -23,25 +23,48 @@ import { Badge } from "@/components/ui/badge";
 import { VideoWithUser } from "@/lib/db/schema";
 import { formatDuration, timeAgo } from "@/lib/utils";
 import Link from "next/link";
+import { useVideoMutations } from "@/hooks/useVideoMutations";
+import { useSession } from "@/lib/auth-client";
+import Image from "next/image";
 
 interface VideoCardProps {
   video: VideoWithUser;
   cardClass?: string;
+  queryKey: string[];
 }
 
-export default function VideoCard({ video, cardClass }: VideoCardProps) {
+export default function VideoCard({
+  video,
+  cardClass,
+  queryKey,
+}: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { data: session } = useSession();
+  const { deleteMutation } = useVideoMutations({
+    queryKey,
+    redirectOnDelete: false, // Don't redirect from cards
+  });
   const { title, thumbnailUrl, duration, views, createdAt, user } = video;
   const authorName = user?.name ?? "Jack";
-  const authorAvatar =
-    user?.image ??
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face";
+  const authorAvatar = user?.image;
   const videoCreatedAt = timeAgo(createdAt);
   const durationFormatted = formatDuration(duration);
+  const isOwner = user?.id === session?.user?.id;
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this video? This action cannot be undone.",
+    );
+
+    if (!confirmed) return;
+
+    await deleteMutation.mutateAsync(video.id);
+  };
 
   const handleMenuAction = (action: string) => {
-    console.log(`${action} clicked for video: ${title}`);
-    // Add your action handlers here
+    if (action === "delete") {
+      handleDelete();
+    }
   };
 
   const handleVideoClick = () => {
@@ -57,13 +80,25 @@ export default function VideoCard({ video, cardClass }: VideoCardProps) {
     >
       <CardContent className="p-0">
         {/* Thumbnail Section */}
-        <Link href={`/video/${video.id}`}>
+        <Link href={`/video/${video.id}`} prefetch={false}>
           <div className="relative aspect-video bg-gray-100 overflow-hidden">
-            <img
-              src={thumbnailUrl}
-              alt={title}
-              className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-            />
+            {thumbnailUrl ? (
+              <div className="relative w-full h-full">
+                <Image
+                  src={thumbnailUrl}
+                  alt={title}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  loading="lazy"
+                  quality={75}
+                />
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                <Play className="w-16 h-16 text-primary/40" />
+              </div>
+            )}
 
             {/* Duration Badge */}
             <Badge
@@ -140,10 +175,10 @@ export default function VideoCard({ video, cardClass }: VideoCardProps) {
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => handleMenuAction("play")}>
+                  {/* <DropdownMenuItem onClick={() => handleMenuAction("play")}>
                     <Play className="mr-2 h-4 w-4" />
                     Watch Now
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
 
                   <DropdownMenuItem
                     onClick={() => handleMenuAction("download")}
@@ -156,21 +191,26 @@ export default function VideoCard({ video, cardClass }: VideoCardProps) {
                     <Share className="mr-2 h-4 w-4" />
                     Share
                   </DropdownMenuItem>
+                  {isOwner && (
+                    <>
+                      <DropdownMenuSeparator />
 
-                  <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleMenuAction("edit")}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={() => handleMenuAction("edit")}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={() => handleMenuAction("delete")}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleMenuAction("delete")}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

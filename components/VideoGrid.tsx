@@ -48,7 +48,7 @@ export default function VideoGrid({
     isFetching,
     isError,
   } = useInfiniteQuery({
-    queryKey: [...queryKey, searchQuery],
+    queryKey,
 
     queryFn: async ({ pageParam }) => {
       return await searchAction(searchQuery, pageParam, pageSize);
@@ -155,6 +155,7 @@ export default function VideoGrid({
             <VideoCard
               key={video.id}
               video={video}
+              queryKey={[...queryKey]}
               // showVisibilityBadge={showVisibilityBadge}
             />
           ))}
