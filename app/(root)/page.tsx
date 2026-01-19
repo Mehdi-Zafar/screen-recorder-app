@@ -50,7 +50,7 @@ async function LibraryContent({ searchQuery }: { searchQuery: string }) {
         <VideoGrid
           initialVideos={initialVideos}
           searchAction={searchPublicVideos}
-          queryKey={["videos", "public"]} // Unique cache key
+          queryKey={["videos", "public",searchQuery]} // Unique cache key
           searchQuery={searchQuery}
           emptyMessage={
             searchQuery

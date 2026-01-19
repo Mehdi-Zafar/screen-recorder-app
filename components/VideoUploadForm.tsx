@@ -28,6 +28,7 @@ import FileInput, { FileInputRef } from "./FileInput"; // Your original componen
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { revalidateHomePage } from "@/lib/actions/video.actions";
 
 // Back to File-based validation (like your original)
 const formSchema = z.object({
@@ -45,7 +46,7 @@ const formSchema = z.object({
     .instanceof(File, { message: "Video file is required" })
     .refine(
       (file) => file.size <= 1000 * 1024 * 1024, // 1GB limit for UploadThing
-      "Video must be less than 1GB"
+      "Video must be less than 1GB",
     )
     .refine(
       (file) =>
@@ -56,20 +57,20 @@ const formSchema = z.object({
           "video/wmv",
           "video/webm",
         ].includes(file.type),
-      "Only MP4, AVI, MOV, WMV, and WebM formats are supported"
+      "Only MP4, AVI, MOV, WMV, and WebM formats are supported",
     ),
   thumbnail: z
     .instanceof(File, { message: "Thumbnail is required" })
     .refine(
       (file) => file.size <= 8 * 1024 * 1024, // 8MB limit for UploadThing
-      "Thumbnail must be less than 8MB"
+      "Thumbnail must be less than 8MB",
     )
     .refine(
       (file) =>
         ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
-          file.type
+          file.type,
         ),
-      "Only JPEG, PNG, and WebP formats are supported"
+      "Only JPEG, PNG, and WebP formats are supported",
     ),
   visibility: z.enum(["public", "private"], {
     error: "Please select a visibility option",
@@ -160,25 +161,10 @@ export default function VideoUploadForm() {
       }
 
       toast.success("Video uploaded and saved successfully!");
-      // Original mode - send files as FormData
-      // const formData = new FormData();
-      // formData.append("title", data.title);
-      // formData.append("description", data.description);
-      // formData.append("video", data.video);
-      // formData.append("thumbnail", data.thumbnail);
-      // formData.append("visibility", data.visibility);
-
-      // // Your original upload logic here
-      // // await uploadVideo(formData);
-
-      // alert("Video uploaded successfully!");
 
       form.reset();
-      if (data.visibility === "public") {
-        queryClient.invalidateQueries({ queryKey: ["videos", "public"] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["videos", "user"] });
-      }
+      queryClient.removeQueries({ queryKey: ["videos"] });
+      await revalidateHomePage();
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Upload failed. Please try again.");
