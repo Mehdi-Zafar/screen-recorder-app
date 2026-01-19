@@ -66,7 +66,6 @@ export default function Header({
     setSearchTerm(value);
   };
 
-  // ✅ Faster debounce - 200ms instead of 300ms
   useEffect(() => {
     const timer = setTimeout(() => {
       startTransition(() => {
@@ -82,7 +81,7 @@ export default function Header({
       });
 
       onSearchChange?.(searchTerm);
-    }, 200); // ✅ 200ms feels more instant
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchTerm, router, searchParams, onSearchChange]);
