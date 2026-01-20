@@ -1,6 +1,14 @@
 "use client";
 
-import { Camera, ChevronDown, Filter, Search, Upload, X } from "lucide-react";
+import {
+  Camera,
+  ChevronDown,
+  Filter,
+  Search,
+  Upload,
+  X,
+  ArrowUpDown,
+} from "lucide-react";
 import React, { useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "./ui/badge";
@@ -14,20 +22,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "./ui/dropdown-menu";
 import Link from "next/link";
 
-interface Filter {
-  dateRange: string[];
-  duration: string[];
-  author: string[];
-  status: string[];
-}
-
 interface HeaderProps {
   placeholder?: string;
-  onSearchChange?: (value: string) => void;
-  onFilterChange?: (value: Filter) => void;
   className?: string;
   title: string;
   subtitle: string;
@@ -37,8 +38,6 @@ interface HeaderProps {
 
 export default function Header({
   placeholder = "Search videos...",
-  onSearchChange,
-  onFilterChange,
   className = "",
   title,
   subtitle,
@@ -50,12 +49,34 @@ export default function Header({
   const [isPending, startTransition] = useTransition();
 
   const [searchTerm, setSearchTerm] = useState(initialSearchValue);
-  const [selectedFilters, setSelectedFilters] = useState({
+  const [sortBy, setSortBy] = useState<string>("latest"); // ✅ Add sort state
+  const [selectedFilters, setSelectedFilters] = useState<{
+    dateRange: string[];
+    duration: string[];
+    visibility: string[];
+  }>({
     dateRange: [],
     duration: [],
-    author: [],
-    status: [],
+    visibility: [],
   });
+
+  // ✅ Initialize from URL
+  useEffect(() => {
+    const dateRange =
+      searchParams.get("dateRange")?.split(",").filter(Boolean) || [];
+    const duration =
+      searchParams.get("duration")?.split(",").filter(Boolean) || [];
+    const visibility =
+      searchParams.get("visibility")?.split(",").filter(Boolean) || [];
+    const sort = searchParams.get("sortBy") || "latest";
+
+    setSelectedFilters({
+      dateRange,
+      duration,
+      visibility,
+    });
+    setSortBy(sort);
+  }, []);
 
   useEffect(() => {
     setSearchTerm(initialSearchValue);
@@ -66,45 +87,70 @@ export default function Header({
     setSearchTerm(value);
   };
 
+  // ✅ Update URL when search changes
   useEffect(() => {
     const timer = setTimeout(() => {
       startTransition(() => {
-        const params = new URLSearchParams(searchParams.toString());
-
-        if (searchTerm.trim()) {
-          params.set("q", searchTerm.trim());
-        } else {
-          params.delete("q");
-        }
-
-        router.push(`?${params.toString()}`, { scroll: false });
+        updateURL();
       });
-
-      onSearchChange?.(searchTerm);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, router, searchParams, onSearchChange]);
+  }, [searchTerm]);
+
+  // ✅ Update URL when filters or sort changes
+  useEffect(() => {
+    startTransition(() => {
+      updateURL();
+    });
+  }, [selectedFilters, sortBy]);
+
+  // ✅ Central URL update function
+  const updateURL = () => {
+    const params = new URLSearchParams();
+
+    if (searchTerm.trim()) {
+      params.set("q", searchTerm.trim());
+    }
+
+    if (selectedFilters.dateRange.length > 0) {
+      params.set("dateRange", selectedFilters.dateRange.join(","));
+    }
+    if (selectedFilters.duration.length > 0) {
+      params.set("duration", selectedFilters.duration.join(","));
+    }
+    if (selectedFilters.visibility.length > 0) {
+      params.set("visibility", selectedFilters.visibility.join(","));
+    }
+
+    // ✅ Add sort parameter
+    if (sortBy !== "latest") {
+      params.set("sortBy", sortBy);
+    }
+
+    const queryString = params.toString();
+    router.push(queryString ? `?${queryString}` : window.location.pathname, {
+      scroll: false,
+    });
+  };
 
   const clearSearch = () => {
     setSearchTerm("");
-    startTransition(() => {
-      router.push(window.location.pathname, { scroll: false });
-    });
-    onSearchChange?.("");
   };
 
-  const handleFilterToggle = (category: string, value: string) => {
+  const handleFilterToggle = (
+    category: keyof typeof selectedFilters,
+    value: string,
+  ) => {
     setSelectedFilters((prev) => {
       const newFilters = { ...prev };
       if (newFilters[category].includes(value)) {
         newFilters[category] = newFilters[category].filter(
-          (item) => item !== value
+          (item) => item !== value,
         );
       } else {
         newFilters[category] = [...newFilters[category], value];
       }
-      onFilterChange?.(newFilters);
       return newFilters;
     });
   };
@@ -113,30 +159,16 @@ export default function Header({
     setSelectedFilters({
       dateRange: [],
       duration: [],
-      author: [],
-      status: [],
+      visibility: [],
     });
-    onFilterChange?.({
-      dateRange: [],
-      duration: [],
-      author: [],
-      status: [],
-    });
+    setSortBy("latest");
   };
 
   const getActiveFiltersCount = () => {
     return Object.values(selectedFilters).reduce(
       (acc, filters) => acc + filters.length,
-      0
+      0,
     );
-  };
-
-  const handleUpload = () => {
-    console.log("Start recording clicked");
-  };
-
-  const handleRecord = () => {
-    console.log("Download clicked");
   };
 
   const filterOptions = {
@@ -151,18 +183,23 @@ export default function Header({
       { value: "medium", label: "Medium (5-20 min)" },
       { value: "long", label: "Long (> 20 min)" },
     ],
-    author: [
-      { value: "john", label: "John Developer" },
-      { value: "sarah", label: "Sarah Chen" },
-      { value: "mike", label: "Mike Johnson" },
-      { value: "alex", label: "Alex Rodriguez" },
-    ],
-    status: [
-      { value: "published", label: "Published" },
-      { value: "draft", label: "Draft" },
-      { value: "processing", label: "Processing" },
+    visibility: [
+      { value: "public", label: "Public" },
+      { value: "private", label: "Private" },
     ],
   };
+
+  // ✅ Sort options
+  const sortOptions = [
+    { value: "latest", label: "Latest First" },
+    { value: "oldest", label: "Oldest First" },
+    { value: "most-viewed", label: "Most Viewed" },
+    { value: "least-viewed", label: "Least Viewed" },
+    { value: "longest", label: "Longest Duration" },
+    { value: "shortest", label: "Shortest Duration" },
+    { value: "title-asc", label: "Title (A-Z)" },
+    { value: "title-desc", label: "Title (Z-A)" },
+  ];
 
   return (
     <header className="max-w-7xl mx-auto">
@@ -200,7 +237,6 @@ export default function Header({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 ml-6">
           <Link href="/upload">
             <Button
-              onClick={handleUpload}
               variant="destructive"
               size="lg"
               className="shadow-lg hover:shadow-xl transition-shadow"
@@ -211,7 +247,6 @@ export default function Header({
           </Link>
 
           <Button
-            onClick={handleRecord}
             variant="outline"
             size="lg"
             className="shadow-md hover:shadow-lg transition-shadow"
@@ -244,11 +279,37 @@ export default function Header({
               <X className="h-4 w-4" />
             </Button>
           )}
-          {/* ✅ Remove the spinner - it's distracting */}
         </div>
 
-        {/* Filter Dropdown */}
+        {/* Sort and Filter */}
         <div className="flex items-center gap-2">
+          {/* ✅ Sort Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                Sort
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
+                {sortOptions.map((option) => (
+                  <DropdownMenuRadioItem
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="relative">
@@ -267,6 +328,7 @@ export default function Header({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-56">
+              {/* Date Range */}
               <DropdownMenuLabel>Date Range</DropdownMenuLabel>
               {filterOptions.dateRange.map((option) => (
                 <DropdownMenuCheckboxItem
@@ -281,6 +343,36 @@ export default function Header({
               ))}
 
               <DropdownMenuSeparator />
+
+              {/* Duration */}
+              <DropdownMenuLabel>Duration</DropdownMenuLabel>
+              {filterOptions.duration.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={selectedFilters.duration.includes(option.value)}
+                  onCheckedChange={() =>
+                    handleFilterToggle("duration", option.value)
+                  }
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+
+              <DropdownMenuSeparator />
+
+              {/* Visibility */}
+              <DropdownMenuLabel>Visibility</DropdownMenuLabel>
+              {filterOptions.visibility.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={selectedFilters.visibility.includes(option.value)}
+                  onCheckedChange={() =>
+                    handleFilterToggle("visibility", option.value)
+                  }
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
 
               {getActiveFiltersCount() > 0 && (
                 <>
@@ -297,6 +389,58 @@ export default function Header({
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Active Filters Display */}
+      {(getActiveFiltersCount() > 0 || sortBy !== "latest") && (
+        <div className="flex flex-wrap gap-2 mt-4">
+          {/* Sort Badge */}
+          {sortBy !== "latest" && (
+            <Badge
+              variant="default"
+              className="gap-1 cursor-pointer hover:bg-primary/80"
+              onClick={() => setSortBy("latest")}
+            >
+              {sortOptions.find((s) => s.value === sortBy)?.label}
+              <X className="h-3 w-3" />
+            </Badge>
+          )}
+
+          {/* Filter Badges */}
+          {selectedFilters.dateRange.map((filter) => (
+            <Badge
+              key={filter}
+              variant="secondary"
+              className="gap-1 cursor-pointer hover:bg-secondary/80"
+              onClick={() => handleFilterToggle("dateRange", filter)}
+            >
+              {filterOptions.dateRange.find((f) => f.value === filter)?.label}
+              <X className="h-3 w-3" />
+            </Badge>
+          ))}
+          {selectedFilters.duration.map((filter) => (
+            <Badge
+              key={filter}
+              variant="secondary"
+              className="gap-1 cursor-pointer hover:bg-secondary/80"
+              onClick={() => handleFilterToggle("duration", filter)}
+            >
+              {filterOptions.duration.find((f) => f.value === filter)?.label}
+              <X className="h-3 w-3" />
+            </Badge>
+          ))}
+          {selectedFilters.visibility.map((filter) => (
+            <Badge
+              key={filter}
+              variant="secondary"
+              className="gap-1 cursor-pointer hover:bg-secondary/80"
+              onClick={() => handleFilterToggle("visibility", filter)}
+            >
+              {filterOptions.visibility.find((f) => f.value === filter)?.label}
+              <X className="h-3 w-3" />
+            </Badge>
+          ))}
+        </div>
+      )}
     </header>
   );
 }

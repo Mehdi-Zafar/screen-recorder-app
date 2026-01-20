@@ -1,12 +1,11 @@
 import { VideoWithUser } from "../db/schema";
 
 export interface VideoPlayerProps {
-  videoUrl: string;
-  thumbnailUrl: string;
-  title: string;
-  autoPlay?: boolean;
+  video:VideoWithUser;
   onTimeUpdate?: (currentTime: number) => void;
   onEnded?: () => void;
+  autoPlay?: boolean;
+  isOwner: boolean;
 }
 
 export interface VideoPlayerState {
@@ -30,4 +29,10 @@ export interface PaginationOptions {
 export interface PaginatedVideos {
   data: VideoWithUser[]; // video + user
   total: number;
+}
+
+export interface Filters {
+  dateRange: string[];
+  duration: string[];
+  visibility: string[];
 }

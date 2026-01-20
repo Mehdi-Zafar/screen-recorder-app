@@ -7,6 +7,7 @@ import {
   deleteVideo,
 } from "@/lib/actions/video.actions";
 import type { VideoWithUser } from "@/lib/db/schema";
+import { QueryKey } from "@/lib/constants";
 
 interface UseVideoMutationsOptions {
   queryKey: string[];
@@ -75,7 +76,7 @@ export function useVideoMutations({
       }
       if (data.success) {
         toast.success(data.message || "Visibility updated successfully");
-        queryClient.invalidateQueries({ queryKey });
+        queryClient.removeQueries({ queryKey: [QueryKey.VIDEOS] });
       } else {
         toast.error(data.error || "Failed to update visibility");
       }
@@ -129,7 +130,7 @@ export function useVideoMutations({
         toast.success(data.message || "Video deleted successfully");
 
         if (redirectOnDelete) {
-          queryClient.removeQueries({ queryKey: ["videos"] });
+          queryClient.removeQueries({ queryKey: [QueryKey.VIDEOS] });
           router.push(redirectPath);
           router.refresh();
         }

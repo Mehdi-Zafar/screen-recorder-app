@@ -7,7 +7,7 @@ import { Share2, Eye, Calendar, Globe, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import VideoActions from "./VideoActions";
-import { getUserInitials } from "@/lib/helpers";
+import { getUserInitials, handleShare } from "@/lib/helpers";
 
 interface VideoMetadataProps {
   video: VideoWithUser;
@@ -18,27 +18,6 @@ export default function VideoMetadata({
   video,
   showVisibility = false,
 }: VideoMetadataProps) {
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/video/${video.id}`;
-
-    try {
-      if (navigator.share && video.visibility === "public") {
-        await navigator.share({
-          title: video.title,
-          text: video.description || undefined,
-          url: shareUrl,
-        });
-        toast.success("Shared successfully!");
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied to clipboard!");
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name !== "AbortError") {
-        toast.error("Failed to share video");
-      }
-    }
-  };
 
   const formatDuration = (seconds: number | null): string => {
     if (!seconds) return "Unknown duration";
@@ -115,7 +94,7 @@ export default function VideoMetadata({
           <Button
             variant="outline"
             size="sm"
-            onClick={handleShare}
+            onClick={() => handleShare(video)}
             className="gap-2"
           >
             <Share2 className="w-4 h-4" />

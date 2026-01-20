@@ -3,6 +3,8 @@ import VideoGrid from "@/components/VideoGrid";
 import { VideoService } from "@/lib/services/video-service";
 import { searchPublicVideos } from "@/lib/actions/video.actions";
 import Header from "@/components/Header";
+import { QueryKey } from "@/lib/constants";
+import { Filters } from "@/lib/types/video";
 
 export const metadata = {
   title: "Video Library",
@@ -12,29 +14,64 @@ export const metadata = {
 interface LibraryPageProps {
   searchParams: Promise<{
     q?: string;
+    dateRange?: string;
+    duration?: string;
+    visibility?: string;
+    sortBy?: string;
   }>;
 }
 
-const pageSize = 6;
+const PAGE_SIZE = 6;
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
   const params = await searchParams;
   const searchQuery = params.q || "";
+  const sortBy = params.sortBy || "latest";
+
+  const filters = {
+    dateRange: params.dateRange?.split(",").filter(Boolean) || [],
+    duration: params.duration?.split(",").filter(Boolean) || [],
+    visibility: params.visibility?.split(",").filter(Boolean) || [],
+  };
 
   return (
     <div className="container mx-auto px-4 max-w-7xl">
       <Suspense fallback={<LibraryLoading />}>
-        <LibraryContent searchQuery={searchQuery} />
+        <LibraryContent
+          searchQuery={searchQuery}
+          filters={filters}
+          sortBy={sortBy}
+        />
       </Suspense>
     </div>
   );
 }
 
-async function LibraryContent({ searchQuery }: { searchQuery: string }) {
-  // ✅ Server-side fetch for initial data
+async function LibraryContent({
+  searchQuery,
+  filters,
+  sortBy,
+}: {
+  searchQuery: string;
+  filters: Filters;
+  sortBy?: string;
+}) {
   const initialVideos = searchQuery.trim()
-    ? await VideoService.searchPublicVideos(searchQuery, pageSize, 0)
-    : await VideoService.getPublicVideos(pageSize, 0);
+    ? await VideoService.searchPublicVideosWithFilters(
+        searchQuery,
+        filters,
+        sortBy,
+        PAGE_SIZE,
+        0,
+      )
+    : await VideoService.getPublicVideosWithFilters(
+        filters,
+        sortBy,
+        PAGE_SIZE,
+        0,
+      );
+
+  const gridKey = `${searchQuery}-${JSON.stringify(filters)}-${sortBy}`;
 
   return (
     <>
@@ -46,18 +83,26 @@ async function LibraryContent({ searchQuery }: { searchQuery: string }) {
       />
 
       <div className="py-8">
-        {/* ✅ Reusable VideoGrid with TanStack Query */}
         <VideoGrid
+          key={gridKey}
           initialVideos={initialVideos}
           searchAction={searchPublicVideos}
-          queryKey={["videos", "public",searchQuery]} // Unique cache key
+          queryKey={[
+            QueryKey.VIDEOS,
+            QueryKey.PUBLIC,
+            searchQuery,
+            JSON.stringify(filters),
+            sortBy
+          ]}
           searchQuery={searchQuery}
+          filters={filters}
+          sortBy={sortBy}
           emptyMessage={
             searchQuery
               ? `No videos found for "${searchQuery}"`
               : "No public videos available yet"
           }
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
         />
       </div>
     </>

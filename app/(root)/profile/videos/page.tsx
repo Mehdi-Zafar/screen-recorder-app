@@ -7,6 +7,8 @@ import { searchUserVideos } from "@/lib/actions/video.actions";
 import { auth } from "@/lib/auth";
 import Header from "@/components/Header";
 import { Loader2 } from "lucide-react";
+import { QueryKey } from "@/lib/constants";
+import { Filters } from "@/lib/types/video";
 
 export const metadata = {
   title: "My Videos",
@@ -16,27 +18,18 @@ export const metadata = {
 interface ProfileVideosPageProps {
   searchParams: Promise<{
     q?: string;
+    dateRange?: string;
+    duration?: string;
+    visibility?: string;
+    sortBy?: string;
   }>;
 }
 
-const pageSize = 6;
+const PAGE_SIZE = 6;
 
 export default async function ProfileVideosPage({
   searchParams,
 }: ProfileVideosPageProps) {
-  const params = await searchParams;
-  const searchQuery = params.q || "";
-
-  return (
-    <div className="container mx-auto px-4 max-w-7xl">
-      <Suspense fallback={<ProfileVideosLoading />}>
-        <ProfileVideosContent searchQuery={searchQuery} />
-      </Suspense>
-    </div>
-  );
-}
-
-async function ProfileVideosContent({ searchQuery }: { searchQuery: string }) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -45,10 +38,58 @@ async function ProfileVideosContent({ searchQuery }: { searchQuery: string }) {
     redirect("/auth/sign-in");
   }
 
+  const params = await searchParams;
+  const searchQuery = params.q || "";
+  const sortBy = params.sortBy || "latest";
+
+  const filters = {
+    dateRange: params.dateRange?.split(",").filter(Boolean) || [],
+    duration: params.duration?.split(",").filter(Boolean) || [],
+    visibility: params.visibility?.split(",").filter(Boolean) || [],
+  };
+
+  return (
+    <div className="container mx-auto px-4 max-w-7xl">
+      <Suspense fallback={<ProfileVideosLoading />}>
+        <ProfileVideosContent
+          searchQuery={searchQuery}
+          filters={filters}
+          sortBy={sortBy}
+          userId={session.user.id}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ProfileVideosContent({
+  searchQuery,
+  filters,
+  sortBy,
+  userId,
+}: {
+  searchQuery: string;
+  filters: Filters;
+  sortBy: string;
+  userId: string;
+}) {
   // ✅ Server-side fetch for initial data
   const initialVideos = searchQuery.trim()
-    ? await VideoService.searchUserVideos(session.user.id, searchQuery, pageSize, 0)
-    : await VideoService.getUserVideos(session.user.id, pageSize, 0);
+    ? await VideoService.searchUserVideosWithFilters(
+        userId,
+        searchQuery,
+        filters,
+        sortBy,
+        PAGE_SIZE,
+        0,
+      )
+    : await VideoService.getUserVideosWithFilters(
+        userId,
+        filters,
+        sortBy,
+        PAGE_SIZE,
+        0,
+      );
 
   return (
     <>
@@ -64,14 +105,22 @@ async function ProfileVideosContent({ searchQuery }: { searchQuery: string }) {
         <VideoGrid
           initialVideos={initialVideos}
           searchAction={searchUserVideos}
-          queryKey={["videos", "user"]} // Different cache key
+          queryKey={[
+            QueryKey.VIDEOS,
+            QueryKey.USER,
+            searchQuery,
+            JSON.stringify(filters),
+            sortBy,
+          ]}
           searchQuery={searchQuery}
+          filters={filters}
+          sortBy={sortBy}
           emptyMessage={
             searchQuery
               ? `No videos found for "${searchQuery}"`
               : "You haven't uploaded any videos yet"
           }
-          pageSize={pageSize}
+          pageSize={PAGE_SIZE}
         />
       </div>
     </>
