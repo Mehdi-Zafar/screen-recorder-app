@@ -11,8 +11,8 @@ import {
 import { MoreVertical, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { VideoWithUser } from "@/lib/db/schema";
 import Link from "next/link";
-import { useState } from "react";
 import { useVideoMutations } from "@/hooks/useVideoMutations";
+import { QueryKey } from "@/lib/constants";
 
 interface VideoActionsProps {
   video: VideoWithUser;
@@ -20,7 +20,7 @@ interface VideoActionsProps {
 
 export default function VideoActions({ video }: VideoActionsProps) {
   const { visibilityMutation, deleteMutation } = useVideoMutations({
-    queryKey: ["videos","public"],
+    queryKey: [QueryKey.VIDEOS, QueryKey.PUBLIC],
     redirectOnDelete: true,
     redirectPath: "/",
   });

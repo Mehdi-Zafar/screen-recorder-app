@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import type { VideoWithUser } from "@/lib/db/schema";
 import { VideoService } from "../services/video-service";
 import { revalidatePath } from "next/cache";
+import { Filters } from "../types/video";
 
 /**
  * Search public videos with infinite scroll
@@ -13,52 +14,32 @@ export async function searchPublicVideos(
   searchQuery: string,
   offset: number,
   limit: number = 20,
+  filters: Filters = { dateRange: [], duration: [], visibility: [] },
+  sortBy: string = 'latest' // ✅ Add sortBy parameter
 ): Promise<{ videos: VideoWithUser[]; hasMore: boolean }> {
   try {
     const videos = searchQuery.trim()
-      ? await VideoService.searchPublicVideos(searchQuery, limit + 1, offset)
-      : await VideoService.getPublicVideos(limit + 1, offset);
+      ? await VideoService.searchPublicVideosWithFilters(
+          searchQuery,
+          filters,
+          sortBy, // ✅ Pass sortBy
+          limit + 1,
+          offset
+        )
+      : await VideoService.getPublicVideosWithFilters(
+          filters,
+          sortBy, // ✅ Pass sortBy
+          limit + 1,
+          offset
+        );
 
     const hasMore = videos.length > limit;
     const videosToReturn = hasMore ? videos.slice(0, limit) : videos;
 
     return { videos: videosToReturn, hasMore };
   } catch (error) {
-    console.error("❌ Error searching videos:", error);
+    console.error('❌ Error searching videos:', error);
     return { videos: [], hasMore: false };
-  }
-}
-
-/**
- * Load more public videos for infinite scroll
- * @param offset - Number of videos already loaded
- * @param limit - Number of videos to fetch
- * @returns Object with videos array and hasMore boolean
- */
-export async function loadMorePublicVideos(
-  offset: number,
-  limit: number = 20,
-): Promise<{ videos: VideoWithUser[]; hasMore: boolean }> {
-  try {
-    // Fetch limit + 1 to determine if there are more videos
-    const videos = await VideoService.getPublicVideos(limit + 1, offset);
-
-    // If we got more than limit, there are more videos available
-    const hasMore = videos.length > limit;
-
-    // Return only the requested amount
-    const videosToReturn = hasMore ? videos.slice(0, limit) : videos;
-
-    return {
-      videos: videosToReturn,
-      hasMore,
-    };
-  } catch (error) {
-    console.error("❌ Server Action: Error loading videos:", error);
-    return {
-      videos: [],
-      hasMore: false,
-    };
   }
 }
 
@@ -69,6 +50,8 @@ export async function searchUserVideos(
   searchQuery: string,
   offset: number,
   limit: number = 20,
+  filters: Filters = { dateRange: [], duration: [], visibility: [] },
+  sortBy: string = 'latest' // ✅ Add sortBy parameter
 ): Promise<{ videos: VideoWithUser[]; hasMore: boolean }> {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -80,60 +63,31 @@ export async function searchUserVideos(
 
   try {
     const videos = searchQuery.trim()
-      ? await VideoService.searchUserVideos(
+      ? await VideoService.searchUserVideosWithFilters(
           session.user.id,
           searchQuery,
+          filters,
+          sortBy, // ✅ Pass sortBy
           limit + 1,
-          offset,
+          offset
         )
-      : await VideoService.getUserVideos(session.user.id, limit + 1, offset);
+      : await VideoService.getUserVideosWithFilters(
+          session.user.id,
+          filters,
+          sortBy, // ✅ Pass sortBy
+          limit + 1,
+          offset
+        );
 
     const hasMore = videos.length > limit;
     const videosToReturn = hasMore ? videos.slice(0, limit) : videos;
 
     return { videos: videosToReturn, hasMore };
   } catch (error) {
-    console.error("❌ Error searching videos:", error);
+    console.error('❌ Error searching user videos:', error);
     return { videos: [], hasMore: false };
   }
 }
-
-/**
- * Load more user videos for infinite scroll
- * @param offset - Number of videos already loaded
- * @param limit - Number of videos to fetch
- * @returns Object with videos array and hasMore boolean
- */
-// export async function loadMoreUserVideos(
-//   offset: number,
-//   limit: number = 20
-// ): Promise<{ videos: VideoWithUser[]; hasMore: boolean }> {
-//   const session = await auth.api.getSession({
-//     headers: await headers()
-//   });
-
-//   if (!session?.user) {
-//     return { videos: [], hasMore: false };
-//   }
-
-//   try {
-//     const videos = await VideoService.getUserVideos(session.user.id, limit + 1, offset);
-
-//     const hasMore = videos.length > limit;
-//     const videosToReturn = hasMore ? videos.slice(0, limit) : videos;
-
-//     return {
-//       videos: videosToReturn,
-//       hasMore,
-//     };
-//   } catch (error) {
-//     console.error('❌ Server Action: Error loading videos:', error);
-//     return {
-//       videos: [],
-//       hasMore: false,
-//     };
-//   }
-// }
 
 /**
  * Update video visibility (public/private)
@@ -285,13 +239,13 @@ export async function deleteVideo(
 /**
  * Increment video views
  */
-// export async function incrementVideoViews(videoId: string): Promise<void> {
-//   try {
-//     await VideoService.incrementViews(videoId);
-//   } catch (error) {
-//     console.error('❌ Error incrementing views:', error);
-//   }
-// }
+export async function incrementVideoViews(videoId: string): Promise<void> {
+  try {
+    await VideoService.incrementViews(videoId);
+  } catch (error) {
+    console.error('❌ Error incrementing views:', error);
+  }
+}
 
 
 export async function revalidateHomePage() {

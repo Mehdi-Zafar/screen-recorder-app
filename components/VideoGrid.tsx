@@ -6,18 +6,23 @@ import { Loader2 } from "lucide-react";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { Filters } from "@/lib/types/video";
 
 interface VideoGridProps {
   initialVideos: VideoWithUser[];
   searchAction: (
     searchQuery: string,
     offset: number,
-    limit: number
+    limit: number,
+    filters?:Filters,
+    sortBy?:string
   ) => Promise<{ videos: VideoWithUser[]; hasMore: boolean }>;
   queryKey: string[];
   searchQuery?: string;
   emptyMessage?: string;
   pageSize?: number;
+  filters?:Filters;
+  sortBy?:string;
 }
 
 export default function VideoGrid({
@@ -27,6 +32,8 @@ export default function VideoGrid({
   searchQuery = "",
   emptyMessage = "No videos found",
   pageSize = 10,
+  filters,
+  sortBy
 }: VideoGridProps) {
   // ✅ Track if we've rendered this search query before
   const hasRenderedSearchQuery = useRef<string | null>(null);
@@ -51,7 +58,7 @@ export default function VideoGrid({
     queryKey,
 
     queryFn: async ({ pageParam }) => {
-      return await searchAction(searchQuery, pageParam, pageSize);
+      return await searchAction(searchQuery, pageParam, pageSize,filters,sortBy);
     },
 
     initialPageParam: 0,

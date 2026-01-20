@@ -7,7 +7,7 @@ import {
   Download,
   Share,
   Trash2,
-  Edit,
+  Lock,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +26,9 @@ import Link from "next/link";
 import { useVideoMutations } from "@/hooks/useVideoMutations";
 import { useSession } from "@/lib/auth-client";
 import Image from "next/image";
+import { MenuAction } from "@/lib/constants";
+import { toast } from "sonner";
+import { handleShare } from "@/lib/helpers";
 
 interface VideoCardProps {
   video: VideoWithUser;
@@ -61,9 +64,22 @@ export default function VideoCard({
     await deleteMutation.mutateAsync(video.id);
   };
 
-  const handleMenuAction = (action: string) => {
-    if (action === "delete") {
-      handleDelete();
+  const handleDownload = () => {
+    // ✅ Add ?download=1 to UploadThing URL
+    const downloadUrl = `${video.videoUrl}${video.videoUrl.includes("?") ? "&" : "?"}download=1`;
+
+    window.open(downloadUrl, "_blank");
+    toast.success("Download started!");
+  };
+
+  const handleMenuAction = (action: MenuAction) => {
+    switch (action) {
+      case MenuAction.DOWNLOAD:
+        handleDownload();
+      case MenuAction.DELETE:
+        handleDelete();
+      case MenuAction.SHARE:
+        handleShare(video);
     }
   };
 
@@ -107,6 +123,12 @@ export default function VideoCard({
             >
               {durationFormatted}
             </Badge>
+
+            {video.visibility === "private" && (
+              <div className="absolute top-2 left-2 bg-black/80 text-white p-1.5 rounded-full z-10">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+            )}
 
             {/* Play Button Overlay */}
             <div
@@ -154,7 +176,9 @@ export default function VideoCard({
               <div className="text-xs text-gray-500 space-y-1">
                 <p className="font-medium text-gray-700">{authorName}</p>
                 <div className="flex items-center space-x-1">
-                  <span>{views}</span>
+                  <span>
+                    {views} {views === 1 ? "view" : "views"}
+                  </span>
                   <span>•</span>
                   <span>{videoCreatedAt}</span>
                 </div>
@@ -181,29 +205,26 @@ export default function VideoCard({
                   </DropdownMenuItem> */}
 
                   <DropdownMenuItem
-                    onClick={() => handleMenuAction("download")}
+                    onClick={() => handleMenuAction(MenuAction.DOWNLOAD)}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={() => handleMenuAction("share")}>
-                    <Share className="mr-2 h-4 w-4" />
-                    Share
-                  </DropdownMenuItem>
+                  {video.visibility === "public" && (
+                    <DropdownMenuItem
+                      onClick={() => handleMenuAction(MenuAction.SHARE)}
+                    >
+                      <Share className="mr-2 h-4 w-4" />
+                      Share
+                    </DropdownMenuItem>
+                  )}
                   {isOwner && (
                     <>
                       <DropdownMenuSeparator />
 
                       <DropdownMenuItem
-                        onClick={() => handleMenuAction("edit")}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={() => handleMenuAction("delete")}
+                        onClick={() => handleMenuAction(MenuAction.DELETE)}
                         className="text-red-600 focus:text-red-600"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />

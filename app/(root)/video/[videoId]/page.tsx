@@ -41,9 +41,8 @@ async function VideoContent({ videoId }: { videoId: string }) {
 
       {/* Video Player */}
       <VideoPlayer
-        videoUrl={video.videoUrl}
-        thumbnailUrl={video.thumbnailUrl}
-        title={video.title}
+        video={video}
+        isOwner={isOwner}
       />
 
 

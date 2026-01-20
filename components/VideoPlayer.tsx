@@ -4,16 +4,92 @@ import { useVideoPlayer } from "@/hooks/useVideoPlayer";
 import VideoControls from "./VideoControls";
 import { Loader2 } from "lucide-react";
 import { VideoPlayerProps } from "@/lib/types/video";
+import { useEffect, useRef, useState } from "react";
+import { incrementVideoViews } from "@/lib/actions/video.actions";
+import { getSessionArray, setSessionArray } from "@/lib/helpers";
+import { SESSION_VIEWED_VIDEOS } from "@/lib/constants";
 
 export default function VideoPlayer({
-  videoUrl,
-  thumbnailUrl,
-  title,
-  autoPlay = false,
+  video,
   onTimeUpdate,
   onEnded,
+  autoPlay = false,
+  isOwner,
 }: VideoPlayerProps) {
   const { videoRef, state, actions } = useVideoPlayer();
+  const { videoUrl, thumbnailUrl, title, id: videoId } = video;
+  const [viewCount, setViewCount] = useState(video.views);
+  const viewCounted = useRef(false);
+  const watchStartTime = useRef<number | null>(null);
+
+  useEffect(() => {
+    // ✅ Don't count owner's views
+    if (isOwner) return;
+
+    // ✅ Check if already viewed in this session
+    const viewedVideos = getSessionArray<string>(SESSION_VIEWED_VIDEOS);
+
+    if (viewedVideos.includes(videoId)) {
+      viewCounted.current = true;
+      return;
+    }
+
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const handlePlay = () => {
+      // ✅ Start tracking watch time when video starts playing
+      if (!watchStartTime.current) {
+        watchStartTime.current = Date.now();
+      }
+    };
+
+    const handleTimeUpdate = async () => {
+      // ✅ Guard: Already counted or not started watching
+      if (viewCounted.current || !watchStartTime.current) return;
+
+      const videoDuration = videoElement.duration;
+
+      // ✅ Wait until video duration is loaded
+      if (!videoDuration || isNaN(videoDuration)) return;
+
+      const watchedTime = Date.now() - watchStartTime.current;
+      const videoDurationMs = videoDuration * 1000;
+
+      // ✅ Calculate threshold: 30 seconds OR 30% of video (whichever is LESS)
+      const thirtyPercent = videoDurationMs * 0.3;
+      const viewThreshold = Math.min(30000, thirtyPercent);
+
+      // ✅ Check if watched enough time
+      if (watchedTime >= viewThreshold) {
+        // ✅ Set guard flag IMMEDIATELY
+        viewCounted.current = true;
+
+        // ✅ Mark as viewed in session
+        const viewedVideos = getSessionArray<string>(SESSION_VIEWED_VIDEOS);
+        viewedVideos.push(videoId);
+        setSessionArray(SESSION_VIEWED_VIDEOS, viewedVideos);
+
+        // ✅ Update UI optimistically
+        setViewCount((prev) => prev + 1);
+
+        // ✅ Update server
+        await incrementVideoViews(videoId);
+
+        // ✅ Cleanup listeners
+        videoElement.removeEventListener("play", handlePlay);
+        videoElement.removeEventListener("timeupdate", handleTimeUpdate);
+      }
+    };
+
+    videoElement.addEventListener("play", handlePlay);
+    videoElement.addEventListener("timeupdate", handleTimeUpdate);
+
+    return () => {
+      videoElement.removeEventListener("play", handlePlay);
+      videoElement.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [videoId, isOwner, videoRef]);
 
   return (
     <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden group">
