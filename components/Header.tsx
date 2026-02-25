@@ -9,10 +9,10 @@ import {
   X,
   ArrowUpDown,
 } from "lucide-react";
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
+import { Button, buttonVariants } from "./ui/button";
 import { Input } from "./ui/input";
 import {
   DropdownMenu,
@@ -49,7 +49,7 @@ export default function Header({
   const [isPending, startTransition] = useTransition();
 
   const [searchTerm, setSearchTerm] = useState(initialSearchValue);
-  const [sortBy, setSortBy] = useState<string>("latest"); // ✅ Add sort state
+  const [sortBy, setSortBy] = useState<string>("latest");
   const [selectedFilters, setSelectedFilters] = useState<{
     dateRange: string[];
     duration: string[];
@@ -60,21 +60,22 @@ export default function Header({
     visibility: [],
   });
 
-  // ✅ Initialize from URL
-  useEffect(() => {
-    const dateRange =
-      searchParams.get("dateRange")?.split(",").filter(Boolean) || [];
-    const duration =
-      searchParams.get("duration")?.split(",").filter(Boolean) || [];
-    const visibility =
-      searchParams.get("visibility")?.split(",").filter(Boolean) || [];
-    const sort = searchParams.get("sortBy") || "latest";
+  // ✅ Refs to always hold latest values — eliminates stale closure bugs in updateURL
+  const searchTermRef = useRef(searchTerm);
+  const selectedFiltersRef = useRef(selectedFilters);
+  const sortByRef = useRef(sortBy);
 
-    setSelectedFilters({
-      dateRange,
-      duration,
-      visibility,
-    });
+  searchTermRef.current = searchTerm;
+  selectedFiltersRef.current = selectedFilters;
+  sortByRef.current = sortBy;
+
+  // ✅ Initialize from URL params once on mount
+  useEffect(() => {
+    const dateRange = searchParams.get("dateRange")?.split(",").filter(Boolean) || [];
+    const duration = searchParams.get("duration")?.split(",").filter(Boolean) || [];
+    const visibility = searchParams.get("visibility")?.split(",").filter(Boolean) || [];
+    const sort = searchParams.get("sortBy") || "latest";
+    setSelectedFilters({ dateRange, duration, visibility });
     setSortBy(sort);
   }, []);
 
@@ -82,94 +83,84 @@ export default function Header({
     setSearchTerm(initialSearchValue);
   }, [initialSearchValue]);
 
+  // ✅ Stable updateURL — reads from refs so always has latest values
+  // No stale closure possible since refs are updated every render above
+  const updateURL = useCallback((overrides?: {
+    search?: string;
+    filters?: typeof selectedFilters;
+    sort?: string;
+  }) => {
+    const search = overrides?.search ?? searchTermRef.current;
+    const filters = overrides?.filters ?? selectedFiltersRef.current;
+    const sort = overrides?.sort ?? sortByRef.current;
+
+    const params = new URLSearchParams();
+
+    if (search.trim()) params.set("q", search.trim());
+    if (filters.dateRange.length > 0) params.set("dateRange", filters.dateRange.join(","));
+    if (filters.duration.length > 0) params.set("duration", filters.duration.join(","));
+    if (filters.visibility.length > 0) params.set("visibility", filters.visibility.join(","));
+    if (sort !== "latest") params.set("sortBy", sort);
+
+    const queryString = params.toString();
+    startTransition(() => {
+      router.push(queryString ? `?${queryString}` : window.location.pathname, {
+        scroll: false,
+      });
+    });
+  }, [router]);
+
+  // ✅ Debounce ONLY the search input — 400ms is snappy but avoids per-keystroke requests
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-  };
 
-  // ✅ Update URL when search changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      startTransition(() => {
-        updateURL();
-      });
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  // ✅ Update URL when filters or sort changes
-  useEffect(() => {
-    startTransition(() => {
-      updateURL();
-    });
-  }, [selectedFilters, sortBy]);
-
-  // ✅ Central URL update function
-  const updateURL = () => {
-    const params = new URLSearchParams();
-
-    if (searchTerm.trim()) {
-      params.set("q", searchTerm.trim());
-    }
-
-    if (selectedFilters.dateRange.length > 0) {
-      params.set("dateRange", selectedFilters.dateRange.join(","));
-    }
-    if (selectedFilters.duration.length > 0) {
-      params.set("duration", selectedFilters.duration.join(","));
-    }
-    if (selectedFilters.visibility.length > 0) {
-      params.set("visibility", selectedFilters.visibility.join(","));
-    }
-
-    // ✅ Add sort parameter
-    if (sortBy !== "latest") {
-      params.set("sortBy", sortBy);
-    }
-
-    const queryString = params.toString();
-    router.push(queryString ? `?${queryString}` : window.location.pathname, {
-      scroll: false,
-    });
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      updateURL({ search: value });
+    }, 300);
   };
 
   const clearSearch = () => {
     setSearchTerm("");
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    updateURL({ search: "" });
   };
 
+  // ✅ Filters and sort update URL immediately — no debounce needed
+  // User explicitly clicked, so intent is clear and instant feedback is expected
   const handleFilterToggle = (
     category: keyof typeof selectedFilters,
     value: string,
   ) => {
     setSelectedFilters((prev) => {
-      const newFilters = { ...prev };
-      if (newFilters[category].includes(value)) {
-        newFilters[category] = newFilters[category].filter(
-          (item) => item !== value,
-        );
-      } else {
-        newFilters[category] = [...newFilters[category], value];
-      }
-      return newFilters;
+      const updated = {
+        ...prev,
+        [category]: prev[category].includes(value)
+          ? prev[category].filter((item) => item !== value)
+          : [...prev[category], value],
+      };
+      updateURL({ filters: updated });
+      return updated;
     });
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    updateURL({ sort: value });
   };
 
   const clearAllFilters = () => {
-    setSelectedFilters({
-      dateRange: [],
-      duration: [],
-      visibility: [],
-    });
+    const reset = { dateRange: [], duration: [], visibility: [] };
+    setSelectedFilters(reset);
     setSortBy("latest");
+    updateURL({ filters: reset, sort: "latest" });
   };
 
-  const getActiveFiltersCount = () => {
-    return Object.values(selectedFilters).reduce(
-      (acc, filters) => acc + filters.length,
-      0,
-    );
-  };
+  const getActiveFiltersCount = () =>
+    Object.values(selectedFilters).reduce((acc, f) => acc + f.length, 0);
 
   const filterOptions = {
     dateRange: [
@@ -189,7 +180,6 @@ export default function Header({
     ],
   };
 
-  // ✅ Sort options
   const sortOptions = [
     { value: "latest", label: "Latest First" },
     { value: "oldest", label: "Oldest First" },
@@ -204,7 +194,6 @@ export default function Header({
   return (
     <header className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between py-8 md:py-12">
-        {/* Left Section */}
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
@@ -218,56 +207,51 @@ export default function Header({
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-lg mb-4">
               {subtitle}
             </p>
-
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="text-xs">
-                HD Quality
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                No Watermark
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                Easy Sharing
-              </Badge>
+              <Badge variant="outline" className="text-xs">HD Quality</Badge>
+              <Badge variant="outline" className="text-xs">No Watermark</Badge>
+              <Badge variant="outline" className="text-xs">Easy Sharing</Badge>
             </div>
           </div>
         </div>
 
-        {/* Right Section - Buttons */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 ml-6">
-          <Link href="/upload">
-            <Button
-              variant="destructive"
-              size="lg"
-              className="shadow-lg hover:shadow-xl transition-shadow"
-            >
-              <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              Upload Video
-            </Button>
+          <Link
+            href="/upload"
+            className={buttonVariants({
+              variant: "destructive",
+              size: "lg",
+              className: "shadow-lg hover:shadow-xl transition-shadow",
+            })}
+          >
+            <Upload className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+            Upload Video
           </Link>
-
-          <Button
-            variant="outline"
-            size="lg"
-            className="shadow-md hover:shadow-lg transition-shadow"
+          <Link
+            href="/record"
+            className={buttonVariants({
+              variant: "outline",
+              size: "lg",
+              className: "shadow-lg hover:shadow-xl transition-shadow",
+            })}
           >
             <Camera className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Record Video
-          </Button>
+          </Link>
         </div>
       </div>
 
       {/* Search and Filter Section */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-        {/* Search Input */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          {/* ✅ Show pending indicator on input so user knows request is in-flight */}
           <Input
             type="text"
             placeholder={placeholder}
             value={searchTerm}
             onChange={handleSearchChange}
-            className="pl-10 pr-10"
+            className={`pl-10 pr-10 transition-opacity ${isPending ? "opacity-70" : "opacity-100"}`}
           />
           {searchTerm && (
             <Button
@@ -281,27 +265,22 @@ export default function Header({
           )}
         </div>
 
-        {/* Sort and Filter */}
         <div className="flex items-center gap-2">
-          {/* ✅ Sort Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" disabled={isPending}>
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 Sort
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Sort By</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
+              {/* ✅ handleSortChange instead of setSortBy directly */}
+              <DropdownMenuRadioGroup value={sortBy} onValueChange={handleSortChange}>
                 {sortOptions.map((option) => (
-                  <DropdownMenuRadioItem
-                    key={option.value}
-                    value={option.value}
-                  >
+                  <DropdownMenuRadioItem key={option.value} value={option.value}>
                     {option.label}
                   </DropdownMenuRadioItem>
                 ))}
@@ -309,10 +288,9 @@ export default function Header({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="relative">
+              <Button variant="outline" className="relative" disabled={isPending}>
                 <Filter className="mr-2 h-4 w-4" />
                 Filters
                 {getActiveFiltersCount() > 0 && (
@@ -326,61 +304,43 @@ export default function Header({
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-
             <DropdownMenuContent align="end" className="w-56">
-              {/* Date Range */}
               <DropdownMenuLabel>Date Range</DropdownMenuLabel>
               {filterOptions.dateRange.map((option) => (
                 <DropdownMenuCheckboxItem
                   key={option.value}
                   checked={selectedFilters.dateRange.includes(option.value)}
-                  onCheckedChange={() =>
-                    handleFilterToggle("dateRange", option.value)
-                  }
+                  onCheckedChange={() => handleFilterToggle("dateRange", option.value)}
                 >
                   {option.label}
                 </DropdownMenuCheckboxItem>
               ))}
-
               <DropdownMenuSeparator />
-
-              {/* Duration */}
               <DropdownMenuLabel>Duration</DropdownMenuLabel>
               {filterOptions.duration.map((option) => (
                 <DropdownMenuCheckboxItem
                   key={option.value}
                   checked={selectedFilters.duration.includes(option.value)}
-                  onCheckedChange={() =>
-                    handleFilterToggle("duration", option.value)
-                  }
+                  onCheckedChange={() => handleFilterToggle("duration", option.value)}
                 >
                   {option.label}
                 </DropdownMenuCheckboxItem>
               ))}
-
               <DropdownMenuSeparator />
-
-              {/* Visibility */}
               <DropdownMenuLabel>Visibility</DropdownMenuLabel>
               {filterOptions.visibility.map((option) => (
                 <DropdownMenuCheckboxItem
                   key={option.value}
                   checked={selectedFilters.visibility.includes(option.value)}
-                  onCheckedChange={() =>
-                    handleFilterToggle("visibility", option.value)
-                  }
+                  onCheckedChange={() => handleFilterToggle("visibility", option.value)}
                 >
                   {option.label}
                 </DropdownMenuCheckboxItem>
               ))}
-
               {getActiveFiltersCount() > 0 && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={clearAllFilters}
-                    className="text-red-600"
-                  >
+                  <DropdownMenuItem onClick={clearAllFilters} className="text-red-600">
                     Clear All Filters
                   </DropdownMenuItem>
                 </>
@@ -393,48 +353,30 @@ export default function Header({
       {/* Active Filters Display */}
       {(getActiveFiltersCount() > 0 || sortBy !== "latest") && (
         <div className="flex flex-wrap gap-2 mt-4">
-          {/* Sort Badge */}
           {sortBy !== "latest" && (
             <Badge
               variant="default"
               className="gap-1 cursor-pointer hover:bg-primary/80"
-              onClick={() => setSortBy("latest")}
+              onClick={() => handleSortChange("latest")}
             >
               {sortOptions.find((s) => s.value === sortBy)?.label}
               <X className="h-3 w-3" />
             </Badge>
           )}
-
-          {/* Filter Badges */}
           {selectedFilters.dateRange.map((filter) => (
-            <Badge
-              key={filter}
-              variant="secondary"
-              className="gap-1 cursor-pointer hover:bg-secondary/80"
-              onClick={() => handleFilterToggle("dateRange", filter)}
-            >
+            <Badge key={filter} variant="secondary" className="gap-1 cursor-pointer hover:bg-secondary/80" onClick={() => handleFilterToggle("dateRange", filter)}>
               {filterOptions.dateRange.find((f) => f.value === filter)?.label}
               <X className="h-3 w-3" />
             </Badge>
           ))}
           {selectedFilters.duration.map((filter) => (
-            <Badge
-              key={filter}
-              variant="secondary"
-              className="gap-1 cursor-pointer hover:bg-secondary/80"
-              onClick={() => handleFilterToggle("duration", filter)}
-            >
+            <Badge key={filter} variant="secondary" className="gap-1 cursor-pointer hover:bg-secondary/80" onClick={() => handleFilterToggle("duration", filter)}>
               {filterOptions.duration.find((f) => f.value === filter)?.label}
               <X className="h-3 w-3" />
             </Badge>
           ))}
           {selectedFilters.visibility.map((filter) => (
-            <Badge
-              key={filter}
-              variant="secondary"
-              className="gap-1 cursor-pointer hover:bg-secondary/80"
-              onClick={() => handleFilterToggle("visibility", filter)}
-            >
+            <Badge key={filter} variant="secondary" className="gap-1 cursor-pointer hover:bg-secondary/80" onClick={() => handleFilterToggle("visibility", filter)}>
               {filterOptions.visibility.find((f) => f.value === filter)?.label}
               <X className="h-3 w-3" />
             </Badge>

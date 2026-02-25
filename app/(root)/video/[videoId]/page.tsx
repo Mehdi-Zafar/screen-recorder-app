@@ -5,9 +5,6 @@ import { auth } from "@/lib/auth";
 import { VideoService } from "@/lib/services/video-service";
 import VideoPlayer from "@/components/VideoPlayer";
 import VideoMetadata from "@/components/VideoMetadata";
-// import SignUpBanner from '@/components/SignUpBanner';
-import VideoActions from "@/components/VideoActions";
-// import SignUpCallToAction from '@/components/video/SignUpCallToAction';
 
 interface VideoPageProps {
   params: Promise<{ videoId: string }>;
@@ -19,7 +16,10 @@ async function VideoContent({ videoId }: { videoId: string }) {
   });
 
   // Fetch video using service method with smart access control
-  const video = await VideoService.getAuthorizedVideoById(videoId, session?.user?.id);
+  const video = await VideoService.getAuthorizedVideoById(
+    videoId,
+    session?.user?.id,
+  );
 
   // If video not found or user doesn't have access
   if (!video) {
@@ -40,11 +40,7 @@ async function VideoContent({ videoId }: { videoId: string }) {
       )}
 
       {/* Video Player */}
-      <VideoPlayer
-        video={video}
-        isOwner={isOwner}
-      />
-
+      <VideoPlayer video={video} isOwner={isOwner} />
 
       {/* Video Metadata */}
       <VideoMetadata video={video} showVisibility={isOwner} />

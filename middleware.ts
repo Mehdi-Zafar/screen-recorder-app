@@ -7,6 +7,7 @@ const protectedRoutes = [
   "/upload",
   "/settings",
   "/dashboard",
+  "record"
 ];
 
 /**

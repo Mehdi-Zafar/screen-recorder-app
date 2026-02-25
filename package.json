@@ -11,6 +11,7 @@
   "dependencies": {
     "@better-auth/client": "^0.0.2-alpha.3",
     "@daveyplate/better-auth-ui": "^3.1.4",
+    "@fix-webm-duration/fix": "^1.0.1",
     "@hookform/resolvers": "^5.2.1",
     "@neondatabase/serverless": "^1.0.1",
     "@radix-ui/react-avatar": "^1.1.10",
