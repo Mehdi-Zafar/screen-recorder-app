@@ -1,7 +1,6 @@
-// components/ui/video-upload-form.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,13 +23,13 @@ import {
 } from "@/components/ui/select";
 import TextInput from "./TextInput";
 import TextareaInput from "./TextareaInput";
-import FileInput, { FileInputRef } from "./FileInput"; // Your original component
+import FileInput, { FileInputRef } from "./FileInput";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { revalidateHomePage } from "@/lib/actions/video.actions";
+import { useRouter } from "next/navigation";
 
-// Back to File-based validation (like your original)
 const formSchema = z.object({
   title: z
     .string()
@@ -45,7 +44,7 @@ const formSchema = z.object({
   video: z
     .instanceof(File, { message: "Video file is required" })
     .refine(
-      (file) => file.size <= 1000 * 1024 * 1024, // 1GB limit for UploadThing
+      (file) => file.size <= 1000 * 1024 * 1024,
       "Video must be less than 1GB",
     )
     .refine(
@@ -62,7 +61,7 @@ const formSchema = z.object({
   thumbnail: z
     .instanceof(File, { message: "Thumbnail is required" })
     .refine(
-      (file) => file.size <= 8 * 1024 * 1024, // 8MB limit for UploadThing
+      (file) => file.size <= 8 * 1024 * 1024,
       "Thumbnail must be less than 8MB",
     )
     .refine(
@@ -79,39 +78,88 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// Main Form Component
-export default function VideoUploadForm() {
+interface VideoUploadFormProps {
+  // ✅ Props for pre-filling from recording
+  mode?: "upload" | "recording";
+  initialVideo?: File;
+  initialTitle?: string;
+  initialDescription?: string;
+  recordedDuration?: number; // ✅ Pass actual duration from recording
+  onBack?: () => void; // ✅ Callback for back button
+}
+
+export default function VideoUploadForm({
+  mode = "upload",
+  initialVideo,
+  initialTitle = "",
+  initialDescription = "",
+  recordedDuration, // ✅ Receive recorded duration
+  onBack,
+}: VideoUploadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
-  // Refs to access upload functions
   const videoUploadRef = useRef<FileInputRef>(null);
   const thumbnailUploadRef = useRef<FileInputRef>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
+      title: initialTitle,
+      description: initialDescription,
       visibility: "public",
+      video: initialVideo,
     },
   });
+
+  // ✅ Update form when initial values change
+  useEffect(() => {
+    if (initialVideo) {
+      form.setValue("video", initialVideo);
+    }
+    if (initialTitle) {
+      form.setValue("title", initialTitle);
+    }
+    if (initialDescription) {
+      form.setValue("description", initialDescription);
+    }
+  }, [initialVideo, initialTitle, initialDescription, form]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // Step 1: Upload files to UploadThing
       toast.info("Uploading files...");
 
       let videoUrl: string | null = null;
       let thumbnailUrl: string | null = null;
-      let duration: number | null;
+      let duration: number | null = null;
 
       // Upload video
       if (videoUploadRef.current) {
         try {
           videoUrl = await videoUploadRef.current.uploadFile();
-          duration = await videoUploadRef.current.videoDuration();
+          debugger;
+
+          // ✅ Use recorded duration if available (from recording mode)
+          if (
+            mode === "recording" &&
+            recordedDuration &&
+            recordedDuration > 0
+          ) {
+            duration = recordedDuration;
+            console.log("✅ Using recorded duration:", duration);
+          } else {
+            // ✅ Try to extract from file metadata (for regular uploads)
+            const extractedDuration =
+              await videoUploadRef.current.videoDuration();
+            duration =
+              extractedDuration && extractedDuration > 0
+                ? extractedDuration
+                : null;
+            console.log("✅ Using extracted duration:", duration);
+          }
+
           if (!videoUrl) {
             throw new Error("Video upload failed");
           }
@@ -137,8 +185,9 @@ export default function VideoUploadForm() {
           throw error;
         }
       }
+      debugger;
 
-      // Step 2: Save metadata to your database
+      // Save metadata to database
       toast.info("Saving video information...");
 
       const response = await fetch("/api/videos", {
@@ -151,7 +200,7 @@ export default function VideoUploadForm() {
           description: data.description,
           videoUrl,
           thumbnailUrl,
-          duration,
+          duration, // ✅ Will be recordedDuration for recordings, extracted for uploads
           visibility: data.visibility,
         }),
       });
@@ -160,11 +209,22 @@ export default function VideoUploadForm() {
         throw new Error("Failed to save video information");
       }
 
-      toast.success("Video uploaded and saved successfully!");
+      const result = await response.json();
+
+      toast.success(
+        mode === "recording"
+          ? "Recording saved successfully!"
+          : "Video uploaded successfully!",
+      );
 
       form.reset();
       queryClient.removeQueries({ queryKey: ["videos"] });
       await revalidateHomePage();
+
+      // ✅ Redirect to video page
+      if (result?.video?.id) {
+        router.push(`/video/${result?.video?.id}`);
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Upload failed. Please try again.");
@@ -173,17 +233,36 @@ export default function VideoUploadForm() {
     }
   };
 
-  // Check if any upload is in progress
   const isUploading =
     videoUploadRef.current?.isUploading ||
     thumbnailUploadRef.current?.isUploading;
 
+  // ✅ Helper to format duration
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {/* ✅ Back button for recording mode */}
+      {mode === "recording" && onBack && (
+        <div className="mb-4">
+          <Button variant="ghost" onClick={onBack}>
+            ← Back to Preview
+          </Button>
+        </div>
+      )}
+
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Upload Video</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {mode === "recording" ? "Upload Recording" : "Upload Video"}
+        </h1>
         <p className="text-muted-foreground text-sm">
-          Share your video with the world or keep it private.
+          {mode === "recording"
+            ? "Add details to your screen recording"
+            : "Share your video with the world or keep it private"}
         </p>
       </div>
 
@@ -232,7 +311,7 @@ export default function VideoUploadForm() {
             )}
           />
 
-          {/* Video Upload Field - Conditional rendering based on mode */}
+          {/* Video Upload Field */}
           <FormField
             control={form.control}
             name="video"
@@ -246,19 +325,31 @@ export default function VideoUploadForm() {
                     value={value}
                     onChange={onChange}
                     accept="video/*"
-                    placeholder="Upload your video"
+                    placeholder={
+                      mode === "recording"
+                        ? "Screen recording ready"
+                        : "Upload your video"
+                    }
                     error={form.formState.errors.video?.message}
                   />
                 </FormControl>
                 <FormDescription>
                   Supported formats: MP4, AVI, MOV, WMV, WebM. Max size: 1GB.
+                  {/* ✅ Show recorded duration for recordings */}
+                  {mode === "recording" &&
+                    recordedDuration &&
+                    recordedDuration > 0 && (
+                      <span className="block mt-1 font-medium">
+                        Duration: {formatTime(recordedDuration)}
+                      </span>
+                    )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Thumbnail Upload Field - Conditional rendering based on mode */}
+          {/* Thumbnail Upload Field */}
           <FormField
             control={form.control}
             name="thumbnail"
@@ -285,7 +376,7 @@ export default function VideoUploadForm() {
             )}
           />
 
-          {/* Visibility Field - Select Version */}
+          {/* Visibility Field */}
           <FormField
             control={form.control}
             name="visibility"
@@ -334,10 +425,10 @@ export default function VideoUploadForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset()}
+              onClick={onBack || (() => form.reset())}
               disabled={isSubmitting || isUploading}
             >
-              Cancel
+              {mode === "recording" ? "Back" : "Cancel"}
             </Button>
             <Button type="submit" disabled={isSubmitting || isUploading}>
               {isSubmitting || isUploading ? (
@@ -345,6 +436,8 @@ export default function VideoUploadForm() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isUploading ? "Uploading..." : "Saving..."}
                 </>
+              ) : mode === "recording" ? (
+                "Save Recording"
               ) : (
                 "Upload Video"
               )}

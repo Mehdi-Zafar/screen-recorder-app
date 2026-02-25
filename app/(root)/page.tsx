@@ -71,8 +71,6 @@ async function LibraryContent({
         0,
       );
 
-  const gridKey = `${searchQuery}-${JSON.stringify(filters)}-${sortBy}`;
-
   return (
     <>
       <Header
@@ -84,7 +82,6 @@ async function LibraryContent({
 
       <div className="py-8">
         <VideoGrid
-          key={gridKey}
           initialVideos={initialVideos}
           searchAction={searchPublicVideos}
           queryKey={[
@@ -92,7 +89,7 @@ async function LibraryContent({
             QueryKey.PUBLIC,
             searchQuery,
             JSON.stringify(filters),
-            sortBy
+            sortBy,
           ]}
           searchQuery={searchQuery}
           filters={filters}
