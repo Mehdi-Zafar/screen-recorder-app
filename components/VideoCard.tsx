@@ -76,10 +76,13 @@ export default function VideoCard({
     switch (action) {
       case MenuAction.DOWNLOAD:
         handleDownload();
+        break;
       case MenuAction.DELETE:
         handleDelete();
+        break;
       case MenuAction.SHARE:
         handleShare(video);
+        break;
     }
   };
 
