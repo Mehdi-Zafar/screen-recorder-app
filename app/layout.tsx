@@ -6,8 +6,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/providers/QueryProvider";
 
 const openSans = Open_Sans({
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -22,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${openSans.className} antialiased`}
-      >
+      <body className={`${openSans.className} antialiased`}>
         <QueryProvider>
           <Providers>{children}</Providers>
           <Toaster position="top-center" />

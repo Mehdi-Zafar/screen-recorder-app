@@ -19,9 +19,9 @@ export default async function AuthPage({
 
   return (
     <main className="container h-screen flex grow flex-col items-center justify-center self-center p-4 md:p-6">
-      <div className="absolute top-8 left-8">
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4">
         <Link href="/" className={buttonVariants({ variant: "outline" })}>
-          <ArrowLeftIcon /> Back to Home
+          <ArrowLeftIcon /> <span className="hidden sm:inline">Back to Home</span>
         </Link>
       </div>
       <AuthView
