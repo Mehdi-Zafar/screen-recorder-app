@@ -33,7 +33,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* App Name */}
           <div className="flex-shrink-0">
@@ -84,12 +84,12 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
+                  {/* <DropdownMenuItem asChild>
                     <Link href="/settings">
                       <Settings className="mr-3 h-4 w-4" />
                       Settings
                     </Link>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
 
                   <DropdownMenuSeparator />
 
@@ -101,12 +101,12 @@ export default function Navbar() {
               </DropdownMenu>
             ) : (
               <>
-                <Link href="/auth/sign-in" className={buttonVariants()}>
+                <Link href="/auth/sign-in" className={buttonVariants({className:"mr-0! sm:mr-4!"})}>
                   Sign In
                 </Link>
                 <Link
                   href="/auth/sign-up"
-                  className={buttonVariants({ variant: "outline" })}
+                  className={buttonVariants({ variant: "outline",className:"hidden! sm:inline-flex!" })}
                 >
                   Sign Up
                 </Link>

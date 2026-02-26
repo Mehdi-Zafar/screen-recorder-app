@@ -90,7 +90,7 @@ export default function VideoCard({
 
   return (
     <Card
-      className={`group overflow-hidden transition-all duration-200 hover:shadow-lg ${cardClass} pt-0`}
+      className={`group overflow-hidden transition-all duration-200 hover:shadow-lg ${cardClass} pt-0 pb-0 sm:pb-2`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

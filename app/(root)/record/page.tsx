@@ -117,11 +117,11 @@ export default function RecordPage() {
   // ✅ Recording interface
   return (
     <div className="container mx-auto px-4 max-w-4xl py-8">
-      <Card className="p-8">
-        <div className="text-center space-y-6">
+      <Card className="p-4 sm:p-8">
+        <div className="text-center space-y-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Screen Recorder</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Screen Recorder</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Record your screen, window, or browser tab
             </p>
           </div>
@@ -271,7 +271,7 @@ export default function RecordPage() {
           </div>
 
           {state === "idle" && (
-            <div className="mt-8 text-left bg-muted p-6 rounded-lg space-y-3">
+            <div className="mt-8 text-left bg-muted p-4 sm:p-6 rounded-lg space-y-3">
               <h3 className="font-semibold text-lg">How it works:</h3>
               <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
                 <li>Click &quot;Start Recording&quot; button</li>

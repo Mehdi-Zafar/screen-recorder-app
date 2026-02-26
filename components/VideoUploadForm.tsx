@@ -255,11 +255,11 @@ export default function VideoUploadForm({
         </div>
       )}
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">
+      <div className="mb-8 space-y-1">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-center sm:text-start">
           {mode === "recording" ? "Upload Recording" : "Upload Video"}
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-sm text-center sm:text-start">
           {mode === "recording"
             ? "Add details to your screen recording"
             : "Share your video with the world or keep it private"}
