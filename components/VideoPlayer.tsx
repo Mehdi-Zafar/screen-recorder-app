@@ -16,7 +16,7 @@ export default function VideoPlayer({
   autoPlay = false,
   isOwner,
 }: VideoPlayerProps) {
-  const { videoRef, state, actions } = useVideoPlayer();
+  const { videoRef,containerRef, state, actions } = useVideoPlayer();
   const { videoUrl, thumbnailUrl, title, id: videoId } = video;
   const [viewCount, setViewCount] = useState(video.views);
   const viewCounted = useRef(false);
@@ -92,7 +92,7 @@ export default function VideoPlayer({
   }, [videoId, isOwner, videoRef]);
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden group">
+    <div ref={containerRef} className="relative w-full aspect-video bg-black rounded-lg overflow-hidden group">
       {/* Video Element */}
       <video
         ref={videoRef}

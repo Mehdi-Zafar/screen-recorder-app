@@ -5,6 +5,7 @@ import { VideoPlayerState } from "@/lib/types/video";
 
 export function useVideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<VideoPlayerState>({
     isPlaying: false,
     currentTime: 0,
@@ -54,10 +55,12 @@ export function useVideoPlayer() {
   }, [state.isMuted]);
 
   const toggleFullscreen = useCallback(async () => {
-    if (!videoRef.current) return;
+    const target = containerRef.current;
+    if (!target) return;
+
     try {
       if (!document.fullscreenElement) {
-        await videoRef.current.requestFullscreen();
+        await target.requestFullscreen();
       } else {
         await document.exitFullscreen();
       }
@@ -205,6 +208,7 @@ export function useVideoPlayer() {
 
   return {
     videoRef,
+    containerRef,
     state,
     actions: {
       togglePlay,
