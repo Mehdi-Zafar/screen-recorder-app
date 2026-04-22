@@ -22,6 +22,8 @@ interface VideoControlsProps {
     skip: (seconds: number) => void;
     toggleFullscreen: () => void;
     togglePictureInPicture: () => void;
+    toggleMute: () => void;
+    setVolume: (volume: number) => void;
     setPlaybackRate: (rate: number) => void;
   };
   title: string;
@@ -89,7 +91,11 @@ export default function VideoControls({
           </button>
 
           {/* Volume Control */}
-          <VolumeControl state={state} />
+          <VolumeControl
+            state={state}
+            onMuteToggle={actions.toggleMute}
+            onVolumeChange={actions.setVolume}
+          />
 
           {/* Time Display */}
           <div className="text-white text-sm font-medium ml-2">
