@@ -95,7 +95,7 @@ export function useVideoPlayer() {
     const handleTimeUpdate = () => {
       setState((prev) => ({ ...prev, currentTime: video.currentTime }));
     };
-    // ✅ Removed debugger statement
+
     const handleDurationChange = () => {
       setState((prev) => ({ ...prev, duration: video.duration }));
     };
