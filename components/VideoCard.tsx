@@ -27,7 +27,6 @@ import { useVideoMutations } from "@/hooks/useVideoMutations";
 import { useSession } from "@/lib/auth-client";
 import Image from "next/image";
 import { MenuAction } from "@/lib/constants";
-import { toast } from "sonner";
 import { handleShare } from "@/lib/helpers";
 
 interface VideoCardProps {
@@ -65,11 +64,9 @@ export default function VideoCard({
   };
 
   const handleDownload = () => {
-    // ✅ Add ?download=1 to UploadThing URL
     const downloadUrl = `${video.videoUrl}${video.videoUrl.includes("?") ? "&" : "?"}download=1`;
 
     window.open(downloadUrl, "_blank");
-    toast.success("Download started!");
   };
 
   const handleMenuAction = (action: MenuAction) => {

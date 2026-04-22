@@ -5,6 +5,7 @@ import { VideoPlayerState } from "@/lib/types/video";
 
 export function useVideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<VideoPlayerState>({
     isPlaying: false,
     currentTime: 0,
@@ -40,24 +41,25 @@ export function useVideoPlayer() {
     if (!videoRef.current) return;
     const clampedVolume = Math.max(0, Math.min(1, volume));
     videoRef.current.volume = clampedVolume;
-    setState((prev) => ({
-      ...prev,
-      volume: clampedVolume,
-      isMuted: clampedVolume === 0,
-    }));
+    // ✅ Also set muted attribute so browser mute button stays in sync
+    videoRef.current.muted = clampedVolume === 0;
   }, []);
 
   const toggleMute = useCallback(() => {
     if (!videoRef.current) return;
-    videoRef.current.muted = !state.isMuted;
-    setState((prev) => ({ ...prev, isMuted: !prev.isMuted }));
-  }, [state.isMuted]);
+    videoRef.current.muted = !videoRef.current.muted;
+    if (!videoRef.current.muted && videoRef.current.volume === 0) {
+      videoRef.current.volume = 0.5;
+    }
+  }, []);
 
   const toggleFullscreen = useCallback(async () => {
-    if (!videoRef.current) return;
+    const target = containerRef.current;
+    if (!target) return;
+
     try {
       if (!document.fullscreenElement) {
-        await videoRef.current.requestFullscreen();
+        await target.requestFullscreen();
       } else {
         await document.exitFullscreen();
       }
@@ -95,7 +97,7 @@ export function useVideoPlayer() {
     const handleTimeUpdate = () => {
       setState((prev) => ({ ...prev, currentTime: video.currentTime }));
     };
-    // ✅ Removed debugger statement
+
     const handleDurationChange = () => {
       setState((prev) => ({ ...prev, duration: video.duration }));
     };
@@ -205,6 +207,7 @@ export function useVideoPlayer() {
 
   return {
     videoRef,
+    containerRef,
     state,
     actions: {
       togglePlay,
