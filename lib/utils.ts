@@ -53,7 +53,7 @@ export function timeAgo(date: Date | string | number): string {
 //     const video = document.createElement("video");
 //     video.preload = "metadata";
 
-//     video.onloadedmetadata = () => {debugger
+//     video.onloadedmetadata = () => {
 //       window.URL.revokeObjectURL(video.src); // cleanup
 //       resolve(Math.floor(video.duration)); // in seconds
 //     };
