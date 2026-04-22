@@ -139,7 +139,6 @@ export default function VideoUploadForm({
       if (videoUploadRef.current) {
         try {
           videoUrl = await videoUploadRef.current.uploadFile();
-          debugger;
 
           // ✅ Use recorded duration if available (from recording mode)
           if (
@@ -185,7 +184,6 @@ export default function VideoUploadForm({
           throw error;
         }
       }
-      debugger;
 
       // Save metadata to database
       toast.info("Saving video information...");
